@@ -1,12 +1,12 @@
 /**
  * I2C Library
 */
-
-#ifndef SIMPLE_SLAM_I2C_H
-#define SIMPLE_SLAM_I2C_H
+#pragma once
 
 #include "stm32l4xx_hal.h"
 #include "stm32l4xx_hal_rcc.h"
+
+namespace SimpleSlam {
 
 #define TIMEOUT_US  1000
 #define SINGLE_SIZE 1
@@ -38,7 +38,6 @@
 #define INTERNAL_I2C_RELEASE_RESET()  __HAL_RCC_I2C2_RELEASE_RESET()
 
 void I2C_Init();
-
 void I2C_DeInit();
 
 HAL_StatusTypeDef I2C_Mem_Write(uint16_t peripheral_address, uint16_t reg_address, uint16_t reg_address_size, uint8_t *buffer, uint16_t size);
@@ -46,4 +45,4 @@ HAL_StatusTypeDef I2C_Mem_Write_Single(uint16_t peripheral_address, uint16_t reg
 HAL_StatusTypeDef I2C_Mem_Read(uint16_t peripheral_address, uint16_t reg_address, uint16_t reg_address_size, uint8_t *buffer, uint16_t size);
 HAL_StatusTypeDef I2C_Mem_Read_Single(uint16_t peripheral_address, uint16_t reg_address, uint16_t reg_address_size, uint8_t* buffer);
 
-#endif
+}
