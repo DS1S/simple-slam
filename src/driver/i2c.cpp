@@ -24,11 +24,11 @@ static void scl_sda_gpio_deinit() {
 }
 
 static void handle_i2c_error() {
-    I2C_DeInit();
-    I2C_Init();
+    SimpleSlam::I2C_DeInit();
+    SimpleSlam::I2C_Init();
 }
 
-void I2C_Init() {
+void SimpleSlam::I2C_Init() {
     // Setup the I2C initialization parameters
     i2c_handler.Instance              = I2C2;
     i2c_handler.Init.Timing           = I2C_TIMINGR;
@@ -54,12 +54,12 @@ void I2C_Init() {
     HAL_I2C_Init(&i2c_handler);
 }
 
-void I2C_DeInit() {
+void SimpleSlam::I2C_DeInit() {
     scl_sda_gpio_deinit();
     HAL_I2C_DeInit(&i2c_handler);
 }
 
-HAL_StatusTypeDef I2C_Mem_Write(
+HAL_StatusTypeDef SimpleSlam::I2C_Mem_Write(
     uint16_t peripheral_address, uint16_t reg_address, uint16_t reg_address_size, 
     uint8_t *buffer, uint16_t size
 ) {
@@ -73,7 +73,7 @@ HAL_StatusTypeDef I2C_Mem_Write(
     return status;
 }
 
-HAL_StatusTypeDef I2C_Mem_Write_Single(
+HAL_StatusTypeDef SimpleSlam::I2C_Mem_Write_Single(
     uint16_t peripheral_address, uint16_t reg_address, uint16_t reg_address_size, 
     uint8_t *value
 ) {
@@ -88,7 +88,7 @@ HAL_StatusTypeDef I2C_Mem_Write_Single(
     return status;
 }
 
-HAL_StatusTypeDef I2C_Mem_Read(
+HAL_StatusTypeDef SimpleSlam::I2C_Mem_Read(
     uint16_t peripheral_address, uint16_t reg_address, uint16_t reg_address_size, 
     uint8_t *buffer, uint16_t size
 ) {
@@ -104,9 +104,9 @@ HAL_StatusTypeDef I2C_Mem_Read(
 }
 
 
-HAL_StatusTypeDef I2C_Mem_Read_Single(
+HAL_StatusTypeDef SimpleSlam::I2C_Mem_Read_Single(
     uint16_t peripheral_address, uint16_t reg_address, uint16_t reg_address_size, 
-    uint8_t *buffer, uint16_t size
+    uint8_t *buffer
 ) {
     HAL_StatusTypeDef status = HAL_I2C_Mem_Read(
         &i2c_handler, peripheral_address, reg_address, reg_address_size, buffer, 
