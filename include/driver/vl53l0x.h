@@ -132,7 +132,7 @@ std::optional<error_t> Init(const VL53L0X_Config_t& config);
 std::optional<error_t> data_init(const VL53L0X_Config_t& config);
 std::optional<error_t> static_init(const VL53L0X_Config_t& config);
 std::optional<error_t> reset_device();
-std::optional<error_t> set_reference_spads(uint8_t reference_spads[6], bool is_aperature_spad, uint32_t spad_count);
+std::optional<error_t> set_reference_spads(uint8_t* reference_spads, uint32_t ref_spad_size, bool is_aperature_spad, uint32_t spad_count);
 std::optional<error_t> load_tuning_settings();
 std::optional<error_t> get_spad_count_and_type(uint32_t& count, bool& is_aperature);
 
