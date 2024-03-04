@@ -35,78 +35,53 @@ SimpleSlam::VL53L0X::data_init(const VL53L0X_Config_t& config) {
     HAL_StatusTypeDef status;
 
     uint8_t voltage_setting;
-    status = SimpleSlam::I2C_Mem_Read_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, VHV_CONFIG_PAD_SCL_SDA__EXTSUP_HV, &voltage_setting);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed performing Voltage setting read"))
+    status = SimpleSlam::I2C_Mem_Read_Single(VL53L0X_I2C_DEVICE_ADDRESS, VHV_CONFIG_PAD_SCL_SDA__EXTSUP_HV, &voltage_setting);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed performing Voltage setting read"))
 
-    
     if (config.is_voltage_2v8_mode) {
         voltage_setting |= 0x01;
-        status = SimpleSlam::I2C_Mem_Write_Single(
-            VL53L0X_I2C_DEVICE_ADDRESS, VHV_CONFIG_PAD_SCL_SDA__EXTSUP_HV, 
-            voltage_setting);
-        RETURN_IF_STATUS_NOT_OK(
-            status, ErrorCode::I2C_ERROR, std::string("Failed performing voltage setting write"))
+        status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, VHV_CONFIG_PAD_SCL_SDA__EXTSUP_HV, voltage_setting);
+        RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed performing voltage setting write"))
     }
 
     // Set I2C Mode to standard
     status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, I2C_MODE, 0x00);
-    RETURN_IF_STATUS_NOT_OK(
-            status, ErrorCode::I2C_ERROR, std::string("Failed writing I2C Mode"))
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed writing I2C Mode"))
 
     // Performs some sort of internal tuning and gets a stop variable?
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, POWER_MANAGEMENT_GO1_POWER_FORCE, 0x01);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed in data_init() during internal tuning"))
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, INTERNAL_TUNING_x2, 0x01);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed in data_init() during internal tuning"))
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, SYSRANGE_START, 0x00);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed in data_init() during internal tuning"))
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, POWER_MANAGEMENT_GO1_POWER_FORCE, 0x01);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed in data_init() during internal tuning"))
+
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, INTERNAL_TUNING_x2, 0x01);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed in data_init() during internal tuning"))
+
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, SYSRANGE_START, 0x00);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed in data_init() during internal tuning"))
 
     // This variable is used for some sort of sequencing when doing the measurements?
     uint8_t stop_variable;
     SimpleSlam::I2C_Mem_Read_Single(VL53L0X_I2C_DEVICE_ADDRESS, INTERNAL_TUNING_x1, &stop_variable);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed in data_init(), reading stop variable?"))
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed in data_init(), reading stop variable?"))
 
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, SYSRANGE_START, 0x01);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed in data_init() during internal tuning"))
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, INTERNAL_TUNING_x2, 0x00);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed in data_init() during internal tuning"))
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, POWER_MANAGEMENT_GO1_POWER_FORCE, 0x00);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed in data_init() during internal tuning"))
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, SYSRANGE_START, 0x01);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed in data_init() during internal tuning"))
+
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, INTERNAL_TUNING_x2, 0x00);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed in data_init() during internal tuning"))
+
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, POWER_MANAGEMENT_GO1_POWER_FORCE, 0x00);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed in data_init() during internal tuning"))
 
 
     uint8_t msrc_config_control_val;
-    status = SimpleSlam::I2C_Mem_Read_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, MSRC_CONFIG_CONTROL, &msrc_config_control_val);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, 
-        std::string("Failed in data_init() while reading msrc config"))
+    status = SimpleSlam::I2C_Mem_Read_Single(VL53L0X_I2C_DEVICE_ADDRESS, MSRC_CONFIG_CONTROL, &msrc_config_control_val);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed in data_init() while reading msrc config"))
 
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, MSRC_CONFIG_CONTROL, msrc_config_control_val | 0x12);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, 
-        std::string("Failed in data_init() while disabling limit checks"))
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, MSRC_CONFIG_CONTROL, msrc_config_control_val | 0x12);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed in data_init() while disabling limit checks"))
 
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, SYSTEM_SEQUENCE_CONFIG, 0xFF);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, 
-        std::string("Failed in data_init() while setting system sequence config"))
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, SYSTEM_SEQUENCE_CONFIG, 0xFF);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed in data_init() while setting system sequence config"))
 
     return {};
 }
@@ -126,11 +101,8 @@ SimpleSlam::VL53L0X::static_init(const VL53L0X_Config_t& config) {
     // Because we are not using any sort of glass, the datasheet saids that
     // factory defaults should be okay.
     uint8_t reference_spad_bit_array[6];
-    status = SimpleSlam::I2C_Mem_Read(
-        VL53L0X_I2C_DEVICE_ADDRESS, GLOBAL_CONFIG_SPAD_ENABLES_REF_0, ADDR_SIZE_8, 
-        reference_spad_bit_array, sizeof(reference_spad_bit_array));
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed reading reference spads"))
+    status = SimpleSlam::I2C_Mem_Read(VL53L0X_I2C_DEVICE_ADDRESS, GLOBAL_CONFIG_SPAD_ENABLES_REF_0, ADDR_SIZE_8, reference_spad_bit_array, sizeof(reference_spad_bit_array));
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed reading reference spads"))
 
     for (int i = 0; i < 6; i++) {
         printf("[VL53L0X]: Spad %d: %u\n", i, reference_spad_bit_array[i]);
@@ -152,46 +124,33 @@ SimpleSlam::VL53L0X::reset_device() {
     HAL_StatusTypeDef status;
 
     // Enable the reset bit by bringing low
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, SOFT_RESET_GO2_SOFT_RESET_N, 0x00);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed performing SWR"))
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, SOFT_RESET_GO2_SOFT_RESET_N, 0x00);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed performing SWR"))
 
     uint8_t who_am_i_val;
-    status = SimpleSlam::I2C_Mem_Read_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, VL53L0X_WHO_AM_I, &who_am_i_val);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed Who am i validation"))
+    status = SimpleSlam::I2C_Mem_Read_Single(VL53L0X_I2C_DEVICE_ADDRESS, VL53L0X_WHO_AM_I, &who_am_i_val);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed Who am i validation"))
 
     // Wait until device resets who am i value
     while (who_am_i_val != 0) {
-        SimpleSlam::I2C_Mem_Read_Single(
-            VL53L0X_I2C_DEVICE_ADDRESS, VL53L0X_WHO_AM_I, &who_am_i_val);
-        RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed Who am i validation"))
+        SimpleSlam::I2C_Mem_Read_Single(VL53L0X_I2C_DEVICE_ADDRESS, VL53L0X_WHO_AM_I, &who_am_i_val);
+        RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed Who am i validation"))
     }
 
     HAL_Delay(100);
 
     // Release the reset bit
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, SOFT_RESET_GO2_SOFT_RESET_N, 0x01);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed performing SWR"))
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, SOFT_RESET_GO2_SOFT_RESET_N, 0x01);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed performing SWR"))
 
-
-    status = SimpleSlam::I2C_Mem_Read_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, VL53L0X_WHO_AM_I, &who_am_i_val);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed Who am i validation"))
+    status = SimpleSlam::I2C_Mem_Read_Single(VL53L0X_I2C_DEVICE_ADDRESS, VL53L0X_WHO_AM_I, &who_am_i_val);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed Who am i validation"))
 
     // Wait until the correct WHO_AM_I code is read
     // Indicates device is booted up.
     while (who_am_i_val == 0x00) {
-        SimpleSlam::I2C_Mem_Read_Single(
-            VL53L0X_I2C_DEVICE_ADDRESS, VL53L0X_WHO_AM_I, &who_am_i_val);
-        RETURN_IF_STATUS_NOT_OK(
-            status, ErrorCode::I2C_ERROR, std::string("Failed Who am i validation"))
+        SimpleSlam::I2C_Mem_Read_Single(VL53L0X_I2C_DEVICE_ADDRESS, VL53L0X_WHO_AM_I, &who_am_i_val);
+        RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed Who am i reading"))
     }
 
     HAL_Delay(100);
