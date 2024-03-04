@@ -204,30 +204,20 @@ std::optional<SimpleSlam::VL53L0X::error_t>
 SimpleSlam::VL53L0X::set_reference_spads(uint8_t reference_spads[6], bool is_aperature_spad, uint32_t spad_count) {
     HAL_StatusTypeDef status;
 
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, INTERNAL_TUNING_x1, 0x01);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in set_reference_spads()"))
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, INTERNAL_TUNING_x1, 0x01);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed I2C in set_reference_spads()"))
 
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, DYNAMIC_SPAD_REF_EN_START_OFFSET, 0x00);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in set_reference_spads()"))
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, DYNAMIC_SPAD_REF_EN_START_OFFSET, 0x00);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed I2C in set_reference_spads()"))
 
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, DYNAMIC_SPAD_NUM_REQUESTED_REF_SPAD, 0x2C);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in set_reference_spads()"))
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, DYNAMIC_SPAD_NUM_REQUESTED_REF_SPAD, 0x2C);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed I2C in set_reference_spads()"))
 
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, INTERNAL_TUNING_x1, 0x00);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in set_reference_spads()"))
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, INTERNAL_TUNING_x1, 0x00);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed I2C in set_reference_spads()"))
 
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, GLOBAL_CONFIG_REF_EN_START_SELECT, 0xB4);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in set_reference_spads()"))
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, GLOBAL_CONFIG_REF_EN_START_SELECT, 0xB4);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed I2C in set_reference_spads()"))
 
     
     // is_aperture in vl53l0x_api_calibration.c will become true once
@@ -262,11 +252,8 @@ SimpleSlam::VL53L0X::set_reference_spads(uint8_t reference_spads[6], bool is_ape
         current_index++;
     }
 
-    status = SimpleSlam::I2C_Mem_Write(
-        VL53L0X_I2C_DEVICE_ADDRESS, GLOBAL_CONFIG_SPAD_ENABLES_REF_0, ADDR_SIZE_8, 
-        reference_spads, sizeof(reference_spads));
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in set_reference_spads() when setting the new enabled spads"))
+    status = SimpleSlam::I2C_Mem_Write(VL53L0X_I2C_DEVICE_ADDRESS, GLOBAL_CONFIG_SPAD_ENABLES_REF_0, ADDR_SIZE_8, reference_spads, sizeof(reference_spads));
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed I2C in set_reference_spads() when setting the new enabled spads"))
 
     return {};
 }
@@ -282,7 +269,6 @@ SimpleSlam::VL53L0X::load_tuning_settings() {
     SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, 0x09, 0x00);
     SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, 0x10, 0x00);
     SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, 0x11, 0x00);
-
     SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, 0x24, 0x01);
     SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, 0x25, 0xFF);
     SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, 0x75, 0x00);
@@ -374,121 +360,86 @@ SimpleSlam::VL53L0X::load_tuning_settings() {
 
 std::optional<SimpleSlam::VL53L0X::error_t> 
 SimpleSlam::VL53L0X::get_spad_count_and_type(uint32_t& count, bool& is_aperature) {
+    // I am guessing that whenever more complicated data needs to be read
+    // there is possession of registers/enablements to read the desired 
+    // register then we must release all the registers.
+
     HAL_StatusTypeDef status;
+    std::string error_msg("Failed I2C in get_spad_count_and_type()");
 
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, POWER_MANAGEMENT_GO1_POWER_FORCE, 0x01);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in get_spad_count_and_type()"))
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, POWER_MANAGEMENT_GO1_POWER_FORCE, 0x01);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, error_msg)
 
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, INTERNAL_TUNING_x2, 0x01);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in get_spad_count_and_type()"))
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, INTERNAL_TUNING_x2, 0x01);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, error_msg)
 
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, SYSRANGE_START, 0x00);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in get_spad_count_and_type()"))
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, SYSRANGE_START, 0x00);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, error_msg)
 
 
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, INTERNAL_TUNING_x2, 0x06);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in get_spad_count_and_type()"))
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, INTERNAL_TUNING_x2, 0x06);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, error_msg)
     
     // No defined register for this reg address
     uint8_t tmp;
-    status = SimpleSlam::I2C_Mem_Read_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, 0x83, &tmp);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in get_spad_count_and_type()"))
+    status = SimpleSlam::I2C_Mem_Read_Single(VL53L0X_I2C_DEVICE_ADDRESS, 0x83, &tmp);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, error_msg)
 
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, 0x83, tmp | 0x04);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in get_spad_count_and_type()"))
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, 0x83, tmp | 0x04);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, error_msg)
 
 
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, INTERNAL_TUNING_x2, 0x07);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in get_spad_count_and_type()"))
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, INTERNAL_TUNING_x2, 0x07);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, error_msg)
 
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, SYSTEM_HISTOGRAM_BIN, 0x01);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in get_spad_count_and_type()"))
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, SYSTEM_HISTOGRAM_BIN, 0x01);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, error_msg)
 
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, POWER_MANAGEMENT_GO1_POWER_FORCE, 0x01);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in get_spad_count_and_type()"))
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, POWER_MANAGEMENT_GO1_POWER_FORCE, 0x01);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, error_msg)
 
     // Another mystery register
     status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, 0x94, 0x6B);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in get_spad_count_and_type()"))
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, error_msg)
+
     status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, 0x83, 0x00);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in get_spad_count_and_type()"))
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, error_msg)
 
     status = SimpleSlam::I2C_Mem_Read_Single(VL53L0X_I2C_DEVICE_ADDRESS, 0x83, &tmp);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in get_spad_count_and_type()"))
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, error_msg)
 
     status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, 0x83, 0x01);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in get_spad_count_and_type()"))
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, error_msg)
 
     status = SimpleSlam::I2C_Mem_Read_Single(VL53L0X_I2C_DEVICE_ADDRESS, 0x92, &tmp);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in get_spad_count_and_type()"))
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, error_msg)
 
     count = tmp & 0x7f;
     is_aperature = (tmp >> 7) & 0x01;
 
-    // I am guessing that whenever more complicated data needs to be read
-    // there is possession of registers/enablements to read the desired 
-    // register then we must release all the registers.
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, SYSTEM_HISTOGRAM_BIN, 0x00);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in get_spad_count_and_type()"))
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, SYSTEM_HISTOGRAM_BIN, 0x00);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, error_msg)
 
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, INTERNAL_TUNING_x2, 0x06);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in get_spad_count_and_type()"))
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, INTERNAL_TUNING_x2, 0x06);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, error_msg)
 
     status = SimpleSlam::I2C_Mem_Read_Single(VL53L0X_I2C_DEVICE_ADDRESS, 0x83, &tmp);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in get_spad_count_and_type()"))
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, error_msg)
 
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, 0x83, tmp & ~0x04);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in get_spad_count_and_type()"))
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, 0x83, tmp & ~0x04);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, error_msg)
 
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, INTERNAL_TUNING_x2, 0x01);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in get_spad_count_and_type()"))
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, INTERNAL_TUNING_x2, 0x01);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, error_msg)
 
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, SYSRANGE_START, 0x01);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in get_spad_count_and_type()"))
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, SYSRANGE_START, 0x01);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, error_msg)
 
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, INTERNAL_TUNING_x2, 0x00);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in get_spad_count_and_type()"))
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, INTERNAL_TUNING_x2, 0x00);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, error_msg)
 
-    status = SimpleSlam::I2C_Mem_Write_Single(
-        VL53L0X_I2C_DEVICE_ADDRESS, POWER_MANAGEMENT_GO1_POWER_FORCE, 0x00);
-    RETURN_IF_STATUS_NOT_OK(
-        status, ErrorCode::I2C_ERROR, std::string("Failed I2C in get_spad_count_and_type()"))
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, POWER_MANAGEMENT_GO1_POWER_FORCE, 0x00);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, error_msg)
 
     return {};
 }
