@@ -121,6 +121,7 @@ enum class ErrorCode {
     INVALID_REF_SPAD_CONFIG = 3,
     INVALID_MCPS_LIMT = 4,
     INVALID_TIMING_BUDGET = 5,
+    INVALID_VCSEL_PULSE_PERIOD = 6,
 };
 
 typedef std::pair<ErrorCode, std::string> error_t;
@@ -158,6 +159,7 @@ std::optional<error_t> Init(const VL53L0X_Config_t& config);
 std::optional<error_t> Set_Signal_Rate_Limit(float mega_counts_per_second_limit);
 std::optional<error_t> Get_Measurement_Timing_Budget(uint32_t& budget);
 std::optional<error_t> Set_Measurement_Timing_Budget(uint32_t budget);
+std::optional<error_t> Set_Vcsel_Pulse_Period(VcselPulsePeriod period, uint8_t pclks, uint32_t current_measurement_budget);
 
 std::optional<error_t> data_init(const VL53L0X_Config_t& config);
 std::optional<error_t> static_init(const VL53L0X_Config_t& config);
@@ -170,6 +172,7 @@ std::optional<error_t> perform_ref_calibration();
 std::optional<error_t> get_enabled_sequence_steps(enabled_steps_t& steps);
 std::optional<error_t> get_sequence_steps_timeouts(enabled_steps_t& steps, timeouts_t& timeouts);
 std::optional<error_t> get_vcsel_pulse_period(uint8_t& pulse_period, VcselPulsePeriod period);
+std::optional<error_t> perform_single_ref_calibration(uint8_t vhv_init_byte);
 
 uint32_t convert_timeout_clocks_to_microseconds(uint16_t period_mclks, uint16_t period_pclks);
 uint16_t convert_timeout_us_to_mlcks(uint32_t timeout_us, u_int16_t period_pclks);
