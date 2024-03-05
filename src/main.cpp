@@ -16,6 +16,12 @@ int main() {
     if (result.has_value()) {
         printf("Result: %s\n", result.value().second.c_str());
     }
-    printf("Finishing Simple-Slam\n");
+    printf("Finished init\n");
+    uint16_t distance = 0;
+    while(true) {
+        SimpleSlam::VL53L0X::Perform_Single_Shot_Read(distance);
+        printf("%lu mm\n", distance);
+        ThisThread::sleep_for(200ms);
+    }
     return 0;
 }

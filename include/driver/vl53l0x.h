@@ -160,6 +160,7 @@ std::optional<error_t> Set_Signal_Rate_Limit(float mega_counts_per_second_limit)
 std::optional<error_t> Get_Measurement_Timing_Budget(uint32_t& budget);
 std::optional<error_t> Set_Measurement_Timing_Budget(uint32_t budget);
 std::optional<error_t> Set_Vcsel_Pulse_Period(VcselPulsePeriod period, uint8_t pclks, uint32_t current_measurement_budget);
+std::optional<error_t> Perform_Single_Shot_Read(uint16_t& distance);
 
 std::optional<error_t> data_init(const VL53L0X_Config_t& config);
 std::optional<error_t> static_init(const VL53L0X_Config_t& config);
