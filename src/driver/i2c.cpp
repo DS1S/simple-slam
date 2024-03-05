@@ -43,7 +43,6 @@ void SimpleSlam::I2C_Init() {
     scl_sda_gpio_init();
 
     INTERNAL_I2C_CLK_ENABLE();
-
     // Perform an I2C software reset
     // reference: RM0351 Section 39.4.6: Software reset, see Figure 392.
     INTERNAL_I2C_FORCE_RESET();
@@ -74,12 +73,11 @@ HAL_StatusTypeDef SimpleSlam::I2C_Mem_Write(
 }
 
 HAL_StatusTypeDef SimpleSlam::I2C_Mem_Write_Single(
-    uint16_t peripheral_address, uint16_t reg_address, uint16_t reg_address_size, 
-    uint8_t *value
+    uint16_t peripheral_address, uint16_t reg_address, uint8_t value
 ) {
     HAL_StatusTypeDef status = HAL_I2C_Mem_Write(
-        &i2c_handler, peripheral_address, reg_address,  reg_address_size, 
-        value, SINGLE_SIZE, TIMEOUT_US
+        &i2c_handler, peripheral_address, reg_address, ADDR_SIZE_8,
+        &value, SINGLE_SIZE, TIMEOUT_US
     );
 
     if (status != HAL_OK) {
@@ -105,11 +103,10 @@ HAL_StatusTypeDef SimpleSlam::I2C_Mem_Read(
 
 
 HAL_StatusTypeDef SimpleSlam::I2C_Mem_Read_Single(
-    uint16_t peripheral_address, uint16_t reg_address, uint16_t reg_address_size, 
-    uint8_t *buffer
+    uint16_t peripheral_address, uint16_t reg_address, uint8_t *buffer
 ) {
     HAL_StatusTypeDef status = HAL_I2C_Mem_Read(
-        &i2c_handler, peripheral_address, reg_address, reg_address_size, buffer, 
+        &i2c_handler, peripheral_address, reg_address, ADDR_SIZE_8, buffer, 
         SINGLE_SIZE, TIMEOUT_US
     );
 

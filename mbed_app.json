@@ -1,0 +1,8 @@
+{
+  "target_overrides": {
+      "*": {
+          "platform.stdio-baud-rate": 115200,
+          "target.cpp-std": "c++17"
+      }
+  }
+}

@@ -12,6 +12,14 @@ namespace SimpleSlam {
 #define SINGLE_SIZE 1
 
 /**
+ * @brief I2C Register Sizings
+*/
+#define ADDR_SIZE_8   1U
+#define ADDR_SIZE_16  2U
+#define ADDR_SIZE_24  3U
+#define ADDR_SIZE_32  4U
+
+/**
  * @brief I2C Timing Register Value
  * @note STM32L475 MCU Reference Manual - 39.4.10 Standard-Mode @ 100kHz
 */
@@ -41,8 +49,8 @@ void I2C_Init();
 void I2C_DeInit();
 
 HAL_StatusTypeDef I2C_Mem_Write(uint16_t peripheral_address, uint16_t reg_address, uint16_t reg_address_size, uint8_t *buffer, uint16_t size);
-HAL_StatusTypeDef I2C_Mem_Write_Single(uint16_t peripheral_address, uint16_t reg_address, uint16_t reg_address_size, uint8_t *value);
+HAL_StatusTypeDef I2C_Mem_Write_Single(uint16_t peripheral_address, uint16_t reg_address, uint8_t value);
 HAL_StatusTypeDef I2C_Mem_Read(uint16_t peripheral_address, uint16_t reg_address, uint16_t reg_address_size, uint8_t *buffer, uint16_t size);
-HAL_StatusTypeDef I2C_Mem_Read_Single(uint16_t peripheral_address, uint16_t reg_address, uint16_t reg_address_size, uint8_t* buffer);
+HAL_StatusTypeDef I2C_Mem_Read_Single(uint16_t peripheral_address, uint16_t reg_address, uint8_t* buffer);
 
 }
