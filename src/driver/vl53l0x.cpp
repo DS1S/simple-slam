@@ -95,6 +95,7 @@ SimpleSlam::VL53L0X::Set_Signal_Rate_Limit(float mega_counts_per_second_limit) {
         );
     }
 
+    // Convert to 16 bit floating point, 7 bits used for fractional portion.
     uint16_t limit = mega_counts_per_second_limit * (1 << 7);
     HAL_StatusTypeDef status = SimpleSlam::I2C_Mem_Write_Single(
         VL53L0X_I2C_DEVICE_ADDRESS, FINAL_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT, ((uint8_t*)&limit)[1]);
