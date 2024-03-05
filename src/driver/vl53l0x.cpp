@@ -108,16 +108,16 @@ SimpleSlam::VL53L0X::Set_Signal_Rate_Limit(float mega_counts_per_second_limit) {
 std::optional<SimpleSlam::VL53L0X::error_t> 
 SimpleSlam::VL53L0X::Get_Measurement_Timing_Budget(uint32_t& budget) {
     /* All units in micro seconds us */
-    uint32_t const start_overhead       = 1910;
-    uint32_t const end_overhead         = 960;
-    uint32_t const msrc_overhead        = 660;
-    uint32_t const tcc_overhead         = 590;
-    uint32_t const dss_overhead         = 690;
-    uint32_t const pre_range_overhead   = 660;
-    uint32_t const final_range_overhead = 550;
+    const uint32_t start_overhead_us       = 1910;
+    const uint32_t end_overhead_us         = 960;
+    const uint32_t msrc_overhead_us        = 660;
+    const uint32_t tcc_overhead_us         = 590;
+    const uint32_t dss_overhead_us         = 690;
+    const uint32_t pre_range_overhead_us   = 660;
+    const uint32_t final_range_overhead_us = 550;
 
     // Start and end overheads are always present
-    budget += start_overhead + end_overhead;
+    budget += start_overhead_us + end_overhead_us;
 
     enabled_steps_t enabled_steps;
     timeouts_t timeouts;
@@ -129,23 +129,23 @@ SimpleSlam::VL53L0X::Get_Measurement_Timing_Budget(uint32_t& budget) {
     RETURN_IF_CONTAINS_ERROR(maybe_error)
 
     if (enabled_steps.tcc) {
-        budget += timeouts.msrc_dss_tcc_us + tcc_overhead;
+        budget += timeouts.msrc_dss_tcc_us + tcc_overhead_us;
     }
 
     if (enabled_steps.dss) {
-        budget += 2 * (timeouts.msrc_dss_tcc_us + dss_overhead);
+        budget += 2 * (timeouts.msrc_dss_tcc_us + dss_overhead_us);
     }
 
     if (enabled_steps.msrc) {
-        budget += timeouts.msrc_dss_tcc_us + msrc_overhead;
+        budget += timeouts.msrc_dss_tcc_us + msrc_overhead_us;
     }
 
     if (enabled_steps.pre_range) {
-        budget += timeouts.pre_range_us + pre_range_overhead;
+        budget += timeouts.pre_range_us + pre_range_overhead_us;
     }
 
     if (enabled_steps.final_range) {
-        budget += timeouts.final_range_us + final_range_overhead;
+        budget += timeouts.final_range_us + final_range_overhead_us;
     }
 
     return {};
@@ -154,18 +154,18 @@ SimpleSlam::VL53L0X::Get_Measurement_Timing_Budget(uint32_t& budget) {
 std::optional<SimpleSlam::VL53L0X::error_t> 
 SimpleSlam::VL53L0X::Set_Measurement_Timing_Budget(uint32_t budget) {
     /* All units in micro seconds us */
-    uint32_t const start_overhead       = 1910;
-    uint32_t const end_overhead         = 960;
-    uint32_t const msrc_overhead        = 660;
-    uint32_t const tcc_overhead         = 590;
-    uint32_t const dss_overhead         = 690;
-    uint32_t const pre_range_overhead   = 660;
-    uint32_t const final_range_overhead = 550;
+    const uint32_t start_overhead_us       = 1910;
+    const uint32_t end_overhead_us         = 960;
+    const uint32_t msrc_overhead_us        = 660;
+    const uint32_t tcc_overhead_us         = 590;
+    const uint32_t dss_overhead_us         = 690;
+    const uint32_t pre_range_overhead_us   = 660;
+    const uint32_t final_range_overhead_us = 550;
 
     enabled_steps_t enabled_steps;
     timeouts_t timeouts;
 
-    uint32_t used_budget = start_overhead + end_overhead;
+    uint32_t used_budget = start_overhead_us + end_overhead_us;
 
     auto maybe_error = get_enabled_sequence_steps(enabled_steps);
     RETURN_IF_CONTAINS_ERROR(maybe_error)
@@ -174,26 +174,26 @@ SimpleSlam::VL53L0X::Set_Measurement_Timing_Budget(uint32_t budget) {
     RETURN_IF_CONTAINS_ERROR(maybe_error)
 
     if (enabled_steps.tcc) {
-        used_budget += timeouts.msrc_dss_tcc_us + tcc_overhead;
+        used_budget += timeouts.msrc_dss_tcc_us + tcc_overhead_us;
     }
 
     if (enabled_steps.dss) {
-        used_budget += 2 * (timeouts.msrc_dss_tcc_us + dss_overhead);
+        used_budget += 2 * (timeouts.msrc_dss_tcc_us + dss_overhead_us);
     }
 
     if (enabled_steps.msrc) {
-        used_budget += timeouts.msrc_dss_tcc_us + msrc_overhead;
+        used_budget += timeouts.msrc_dss_tcc_us + msrc_overhead_us;
     }
 
     if (enabled_steps.pre_range) {
-        used_budget += timeouts.pre_range_us + pre_range_overhead;
+        used_budget += timeouts.pre_range_us + pre_range_overhead_us;
     }
 
     if (!enabled_steps.final_range) {
         return {};
     }
 
-    used_budget += final_range_overhead;
+    used_budget += final_range_overhead_us;
 
     if (used_budget > budget) {
         return std::make_optional(
