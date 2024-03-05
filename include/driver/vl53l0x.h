@@ -176,7 +176,7 @@ std::optional<error_t> get_vcsel_pulse_period(uint8_t& pulse_period, VcselPulseP
 std::optional<error_t> perform_single_ref_calibration(uint8_t vhv_init_byte);
 
 uint32_t convert_timeout_clocks_to_microseconds(uint16_t period_mclks, uint16_t period_pclks);
-uint16_t convert_timeout_us_to_mlcks(uint32_t timeout_us, u_int16_t period_pclks);
+uint16_t convert_timeout_us_to_mclks(uint32_t timeout_us, u_int16_t period_pclks);
 uint16_t decode_timeout(uint16_t timeout_val);
 uint16_t encode_timeout(uint16_t timeout_val);
 }

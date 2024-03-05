@@ -206,7 +206,7 @@ SimpleSlam::VL53L0X::Set_Measurement_Timing_Budget(uint32_t budget) {
     }
 
     uint32_t new_final_range_timeout_us = budget - used_budget;
-    uint16_t new_final_range_mclks = convert_timeout_us_to_mlcks(
+    uint16_t new_final_range_mclks = convert_timeout_us_to_mclks(
         new_final_range_timeout_us, timeouts.final_range_vcsel_period_pclks);
     if (enabled_steps.pre_range) {
         new_final_range_mclks += timeouts.pre_range_mclks;
@@ -259,7 +259,7 @@ SimpleSlam::VL53L0X::Set_Vcsel_Pulse_Period(VcselPulsePeriod period, uint8_t pcl
             std::string("Failed to write to PRE_RANGE_CONFIG_VCSEL_PERIOD"))
 
         uint16_t new_pre_range_timeout_mclks =
-            convert_timeout_us_to_mlcks(timeouts.pre_range_us, pclks);
+            convert_timeout_us_to_mclks(timeouts.pre_range_us, pclks);
         
         SimpleSlam::I2C_Mem_Write_Single(
             VL53L0X_I2C_DEVICE_ADDRESS, PRE_RANGE_CONFIG_TIMEOUT_MACROP_HI, ((uint8_t*)&new_pre_range_timeout_mclks)[1]);
@@ -268,7 +268,7 @@ SimpleSlam::VL53L0X::Set_Vcsel_Pulse_Period(VcselPulsePeriod period, uint8_t pcl
         RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Could not write to pre-range config timeout register"));
 
         uint16_t new_msrc_timeout_mclks =
-            convert_timeout_us_to_mlcks(timeouts.msrc_dss_tcc_us, pclks);
+            convert_timeout_us_to_mclks(timeouts.msrc_dss_tcc_us, pclks);
 
         new_msrc_timeout_mclks = std::min(255, new_msrc_timeout_mclks - 1);
 
@@ -313,7 +313,7 @@ SimpleSlam::VL53L0X::Set_Vcsel_Pulse_Period(VcselPulsePeriod period, uint8_t pcl
             VL53L0X_I2C_DEVICE_ADDRESS, FINAL_RANGE_CONFIG_VCSEL_PERIOD, pclks);
         RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Could not write to FINAL_RANGE_CONFIG_VCSEL_PERIOD"));
 
-        uint16_t new_final_range_mclks = convert_timeout_us_to_mlcks(timeouts.final_range_us, pclks);
+        uint16_t new_final_range_mclks = convert_timeout_us_to_mclks(timeouts.final_range_us, pclks);
 
         if (enabled_steps.pre_range) {
             new_final_range_mclks += timeouts.pre_range_mclks;
@@ -1061,7 +1061,7 @@ SimpleSlam::VL53L0X::convert_timeout_clocks_to_microseconds(uint16_t period_mclk
 }
 
 uint16_t 
-SimpleSlam::VL53L0X::convert_timeout_us_to_mlcks(uint32_t timeout_us, u_int16_t period_pclks) {
+SimpleSlam::VL53L0X::convert_timeout_us_to_mclks(uint32_t timeout_us, u_int16_t period_pclks) {
     uint32_t macro_period_ns = (((2304 * period_pclks) * 1655) + 500) / 1000;
     return (((timeout_us * 1000) + (macro_period_ns / 2)) / macro_period_ns);
 }
