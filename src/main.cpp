@@ -20,8 +20,8 @@ int main() {
     uint16_t distance = 0;
     while(true) {
         SimpleSlam::VL53L0X::Perform_Single_Shot_Read(distance);
-        printf("%lu mm\n", distance);
-        ThisThread::sleep_for(200ms);
+        printf("%u mm\n", distance);
+        ThisThread::sleep_for(300ms);
     }
     return 0;
 }

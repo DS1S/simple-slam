@@ -1,3 +1,33 @@
+/**
+ * The following driver code was not written entirely from scratch. Since,
+ * ST's datasheet for the vl53l0x does not provide a) any register maps and b)
+ * any description of the internal components that are operating to obtain
+ * the measurements, the driver had to be reverse engineered from their 
+ * API library for the driver. A majority of code in ST's api was bloat 
+ * and a lot of book keeping for maintaining meta data about the current
+ * configuration of the system. For our cases, we simply needed to initialize
+ * the sensor and perform single shot readings. Even in the API code, there
+ * are registers being written to with no declared definition and so a lot of
+ * the code and register setting patterns are quite obscure. Another benefit
+ * of re-writing is we can remove a lot of the non-needed bloat and configure
+ * it our I2C interface and error handling interfaces.
+ * 
+ * The ST API is referenced by the below github where a user has the ST API copied.
+ * The majority of functions can be traced  in _api.c.
+ * https://github.com/LukeL99/nrf51-vl53l0x-driver/blob/master/core/src/vl53l0x_api.c
+ * 
+ * It was gathered from what useful information was in the data sheet that there
+ * are main functions being called to calibrate:
+ *      - data_init()
+ *      - static_init()
+ *      - perform_ref_calibration()
+ * 
+ * Other calibrations on init include xtalk, offset, and temperature. For our
+ * purposes we can assume the default factory tuned calibrations are "okay". This
+ * means we only have to really call the three functions above to get things rolling
+ * and start seeing some output.
+*/
+
 #include <map>
 #include <vector>
 
@@ -346,6 +376,13 @@ std::optional<SimpleSlam::VL53L0X::error_t> SimpleSlam::VL53L0X::Perform_Single_
     SimpleSlam::I2C_Mem_Read_Single(VL53L0X_I2C_DEVICE_ADDRESS, RESULT_RANGE_STATUS + 10, (uint8_t*)&buffer);
     buffer = buffer << 8;
     SimpleSlam::I2C_Mem_Read_Single(VL53L0X_I2C_DEVICE_ADDRESS, RESULT_RANGE_STATUS + 11, (uint8_t*)&buffer);
+
+    // The value will become 8190 if there is no obstacle in its path. So
+    // set to 0 as we are not "seeing" anything.
+    if (buffer == 8190) {
+        buffer = 0;
+    }
+
     distance = buffer;
 
     status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, SYSTEM_INTERRUPT_CLEAR, 0x01);

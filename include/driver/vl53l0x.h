@@ -27,7 +27,7 @@ namespace SimpleSlam::VL53L0X {
 // SYSRANGE_START[0] 
 #define SYSRANGE_MODE_START_STOP    0x0
 // SYSRANGE_START[1] 
-#define SYSRANGE_MODE_SINGLESHOT    (0x0 << 1)
+#define SYSRANGE_MODE_SINGLESHOT    (0x1 << 1)
 #define SYSRANGE_MODE_BACK_TO_BACK  (0x1 << 1)
 // SYSRANGE_START[2] 
 #define SYSRANGE_MODE_TIMED         (0x1 << 2)
