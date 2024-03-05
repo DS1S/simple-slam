@@ -119,15 +119,45 @@ enum class ErrorCode {
     I2C_ERROR = 1,
     WHO_AM_I_UNEXPECTED_VALUE = 2,
     INVALID_REF_SPAD_CONFIG = 3,
+    INVALID_MCPS_LIMT = 4,
+    INVALID_TIMING_BUDGET = 5,
 };
 
 typedef std::pair<ErrorCode, std::string> error_t;
 
-typedef struct VL53L0X_Config {
+typedef struct {
     bool is_voltage_2v8_mode;
 } VL53L0X_Config_t;
 
+typedef struct {
+    bool tcc;
+    bool dss;
+    bool msrc;
+    bool pre_range;
+    bool final_range;
+} enabled_steps_t;
+
+typedef struct  {
+    uint16_t pre_range_vcsel_period_pclks; 
+    uint16_t final_range_vcsel_period_pclks;
+    uint16_t msrc_dss_tcc_mclks; 
+    uint16_t pre_range_mclks; 
+    uint16_t final_range_mclks;
+    uint32_t msrc_dss_tcc_us;  
+    uint32_t pre_range_us;
+    uint32_t final_range_us;
+} timeouts_t;
+
+enum class VcselPulsePeriod {
+    PRE_RANGE = 1,
+    FINAL_RANGE = 2,
+};
+
+
 std::optional<error_t> Init(const VL53L0X_Config_t& config);
+std::optional<error_t> Set_Signal_Rate_Limit(float mega_counts_per_second_limit);
+std::optional<error_t> Get_Measurement_Timing_Budget(uint32_t& budget);
+std::optional<error_t> Set_Measurement_Timing_Budget(uint32_t budget);
 
 std::optional<error_t> data_init(const VL53L0X_Config_t& config);
 std::optional<error_t> static_init(const VL53L0X_Config_t& config);
@@ -135,5 +165,14 @@ std::optional<error_t> reset_device();
 std::optional<error_t> set_reference_spads(uint8_t* reference_spads, uint32_t ref_spad_size, bool is_aperature_spad, uint32_t spad_count);
 std::optional<error_t> load_tuning_settings();
 std::optional<error_t> get_spad_count_and_type(uint32_t& count, bool& is_aperature);
+std::optional<error_t> set_gpio_config();
+std::optional<error_t> perform_ref_calibration();
+std::optional<error_t> get_enabled_sequence_steps(enabled_steps_t& steps);
+std::optional<error_t> get_sequence_steps_timeouts(enabled_steps_t& steps, timeouts_t& timeouts);
+std::optional<error_t> get_vcsel_pulse_period(uint8_t& pulse_period, VcselPulsePeriod period);
 
+uint32_t convert_timeout_clocks_to_microseconds(uint16_t period_mclks, uint16_t period_pclks);
+uint16_t convert_timeout_us_to_mlcks(uint32_t timeout_us, u_int16_t period_pclks);
+uint16_t decode_timeout(uint16_t timeout_val);
+uint16_t encode_timeout(uint16_t timeout_val);
 }

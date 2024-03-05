@@ -9,9 +9,10 @@
             message));                          \
     }                                           \
 
-#define GET_BIT(i, arr) (arr[i / 8] >> (i % 8))
+#define GET_BIT(i, arr) ((arr[i / 8] >> (i % 8)) & 0x01)
 #define UNSET_BIT(i, arr) (arr[i / 8] &= ~(1 << (i % 8)))
 
+static uint8_t stop_variable;
 
 std::optional<SimpleSlam::VL53L0X::error_t> 
 SimpleSlam::VL53L0X::Init(const VL53L0X_Config_t& config) {
@@ -26,6 +27,146 @@ SimpleSlam::VL53L0X::Init(const VL53L0X_Config_t& config) {
     printf("[VL53L0X]: Performing Static Data Initilization\n");
     maybe_error = static_init(config);
     RETURN_IF_CONTAINS_ERROR(maybe_error)
+
+    printf("[VL53L0X]: Performing Reference Calibration\n");
+    maybe_error = perform_ref_calibration();
+    RETURN_IF_CONTAINS_ERROR(maybe_error)
+
+    return {};
+}
+
+std::optional<SimpleSlam::VL53L0X::error_t> 
+SimpleSlam::VL53L0X::Set_Signal_Rate_Limit(float mega_counts_per_second_limit) {
+    if (!(mega_counts_per_second_limit >= 0 && mega_counts_per_second_limit < 512)) {
+        return std::make_optional(
+            std::make_pair(
+                ErrorCode::INVALID_MCPS_LIMT,
+                "Supported MCPS range is 0-512"
+            )
+        );
+    }
+
+    uint16_t limit = mega_counts_per_second_limit * (1 << 7);
+    HAL_StatusTypeDef status = SimpleSlam::I2C_Mem_Write(
+        VL53L0X_I2C_DEVICE_ADDRESS, FINAL_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT, 
+        ADDR_SIZE_8, (uint8_t*)&limit, sizeof(limit));
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Limit write failure"))
+
+    return {};
+}
+
+std::optional<SimpleSlam::VL53L0X::error_t> 
+SimpleSlam::VL53L0X::Get_Measurement_Timing_Budget(uint32_t& budget) {
+    /* All units in micro seconds us */
+    uint32_t const start_overhead       = 1910;
+    uint32_t const end_overhead         = 960;
+    uint32_t const msrc_overhead        = 660;
+    uint32_t const tcc_overhead         = 590;
+    uint32_t const dss_overhead         = 690;
+    uint32_t const pre_range_overhead   = 660;
+    uint32_t const final_range_overhead = 550;
+
+    // Start and end overheads are always present
+    budget += start_overhead + end_overhead;
+
+    enabled_steps_t enabled_steps;
+    timeouts_t timeouts;
+
+    auto maybe_error = get_enabled_sequence_steps(enabled_steps);
+    RETURN_IF_CONTAINS_ERROR(maybe_error)
+
+    maybe_error = get_sequence_steps_timeouts(enabled_steps, timeouts);
+    RETURN_IF_CONTAINS_ERROR(maybe_error)
+
+    if (enabled_steps.tcc) {
+        budget += timeouts.msrc_dss_tcc_us + tcc_overhead;
+    }
+
+    if (enabled_steps.dss) {
+        budget += 2 * (timeouts.msrc_dss_tcc_us + dss_overhead);
+    }
+
+    if (enabled_steps.msrc) {
+        budget += timeouts.msrc_dss_tcc_us + msrc_overhead;
+    }
+
+    if (enabled_steps.pre_range) {
+        budget += timeouts.pre_range_us + pre_range_overhead;
+    }
+
+    if (enabled_steps.final_range) {
+        budget += timeouts.final_range_us + final_range_overhead;
+    }
+
+    return {};
+}
+
+std::optional<SimpleSlam::VL53L0X::error_t> 
+SimpleSlam::VL53L0X::Set_Measurement_Timing_Budget(uint32_t budget) {
+    /* All units in micro seconds us */
+    uint32_t const start_overhead       = 1910;
+    uint32_t const end_overhead         = 960;
+    uint32_t const msrc_overhead        = 660;
+    uint32_t const tcc_overhead         = 590;
+    uint32_t const dss_overhead         = 690;
+    uint32_t const pre_range_overhead   = 660;
+    uint32_t const final_range_overhead = 550;
+
+    enabled_steps_t enabled_steps;
+    timeouts_t timeouts;
+
+    uint32_t used_budget = start_overhead + end_overhead;
+
+    auto maybe_error = get_enabled_sequence_steps(enabled_steps);
+    RETURN_IF_CONTAINS_ERROR(maybe_error)
+
+    maybe_error = get_sequence_steps_timeouts(enabled_steps, timeouts);
+    RETURN_IF_CONTAINS_ERROR(maybe_error)
+
+    if (enabled_steps.tcc) {
+        used_budget += timeouts.msrc_dss_tcc_us + tcc_overhead;
+    }
+
+    if (enabled_steps.dss) {
+        used_budget += 2 * (timeouts.msrc_dss_tcc_us + dss_overhead);
+    }
+
+    if (enabled_steps.msrc) {
+        used_budget += timeouts.msrc_dss_tcc_us + msrc_overhead;
+    }
+
+    if (enabled_steps.pre_range) {
+        used_budget += timeouts.pre_range_us + pre_range_overhead;
+    }
+
+    if (!enabled_steps.final_range) {
+        return {};
+    }
+
+    used_budget += final_range_overhead;
+
+    if (used_budget > budget) {
+        return std::make_optional(
+            std::make_pair(
+                ErrorCode::INVALID_TIMING_BUDGET,
+                std::string("Used budget with timeouts exceeds measurement budget")
+            )
+        );
+    }
+
+    uint32_t new_final_range_timeout_us = budget - used_budget;
+    uint16_t new_final_range_mclks = convert_timeout_us_to_mlcks(
+        new_final_range_timeout_us, timeouts.final_range_vcsel_period_pclks);
+    if (enabled_steps.pre_range) {
+        new_final_range_mclks += timeouts.pre_range_mclks;
+    }
+
+    new_final_range_mclks = encode_timeout(new_final_range_mclks);
+    HAL_StatusTypeDef status = SimpleSlam::I2C_Mem_Write_Single(
+        VL53L0X_I2C_DEVICE_ADDRESS, FINAL_RANGE_CONFIG_TIMEOUT_MACROP_HI, ((uint8_t*)&new_final_range_mclks)[1]);
+    status = SimpleSlam::I2C_Mem_Write_Single(
+        VL53L0X_I2C_DEVICE_ADDRESS, FINAL_RANGE_CONFIG_TIMEOUT_MACROP_LO, ((uint8_t*)&new_final_range_mclks)[0]);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Could not write to final range config timeout register"));
 
     return {};
 }
@@ -59,7 +200,6 @@ SimpleSlam::VL53L0X::data_init(const VL53L0X_Config_t& config) {
     RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed in data_init() during internal tuning"))
 
     // This variable is used for some sort of sequencing when doing the measurements?
-    uint8_t stop_variable;
     SimpleSlam::I2C_Mem_Read_Single(VL53L0X_I2C_DEVICE_ADDRESS, INTERNAL_TUNING_x1, &stop_variable);
     RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed in data_init(), reading stop variable?"))
 
@@ -79,6 +219,12 @@ SimpleSlam::VL53L0X::data_init(const VL53L0X_Config_t& config) {
 
     status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, MSRC_CONFIG_CONTROL, msrc_config_control_val | 0x12);
     RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed in data_init() while disabling limit checks"))
+
+    // Default Signal rate in mcps
+    // VL53L0X_REG_FINAL_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT is the only one
+    // limit we can actually set.
+    auto maybe_error = Set_Signal_Rate_Limit(0.25f);
+    RETURN_IF_CONTAINS_ERROR(maybe_error)
 
     status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, SYSTEM_SEQUENCE_CONFIG, 0xFF);
     RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed in data_init() while setting system sequence config"))
@@ -116,6 +262,38 @@ SimpleSlam::VL53L0X::static_init(const VL53L0X_Config_t& config) {
     printf("[VL53L0X]: Loading default tuning settings\n");
     maybe_error = load_tuning_settings();
     RETURN_IF_CONTAINS_ERROR(maybe_error)
+
+    printf("[VL53L0X]: Setting GPIO Config\n");
+    maybe_error = set_gpio_config();
+    RETURN_IF_CONTAINS_ERROR(maybe_error)
+
+    uint32_t measurement_timing_budget = 0;
+    Get_Measurement_Timing_Budget(measurement_timing_budget);
+    printf("[VL53L0X]: Measurement Timing Budget (us) = [%lu]\n", measurement_timing_budget);
+
+    /* Disable MSRC and TCC by default */
+    // MSRC =  Minimum Signal Rate Check
+    // TCC = Target Centre Check
+    uint8_t sequence_config;
+    status = SimpleSlam::I2C_Mem_Read_Single(VL53L0X_I2C_DEVICE_ADDRESS, SYSTEM_SEQUENCE_CONFIG, &sequence_config);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed reading sequence config"))
+
+    // Disabling TCC VL53L0X_SEQUENCESTEP_TCC_MASK = 0xEF
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, SYSTEM_SEQUENCE_CONFIG, sequence_config & 0xEF);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed writing sequence config"))
+
+    status = SimpleSlam::I2C_Mem_Read_Single(VL53L0X_I2C_DEVICE_ADDRESS, SYSTEM_SEQUENCE_CONFIG, &sequence_config);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed reading sequence config"))
+
+    // Disabling MSRC VL53L0X_SEQUENCESTEP_TCC_MASK = 0xFB
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, SYSTEM_SEQUENCE_CONFIG, sequence_config & 0xFB);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed writing sequence config"))
+
+    Set_Measurement_Timing_Budget(measurement_timing_budget);
+
+    measurement_timing_budget = 0;
+    Get_Measurement_Timing_Budget(measurement_timing_budget);
+    printf("[VL53L0X]: Measurement Timing Budget (us) = [%lu]\n", measurement_timing_budget);
 
     return {};
 }
@@ -486,4 +664,170 @@ SimpleSlam::VL53L0X::get_spad_count_and_type(uint32_t& count, bool& is_aperature
     return {};
 }
 
+std::optional<SimpleSlam::VL53L0X::error_t> 
+SimpleSlam::VL53L0X::set_gpio_config() {
+    HAL_StatusTypeDef status;
 
+    /* Set interrupt config to new sample ready */
+    // Value associated with VL53L0X_GPIOFUNCTIONALITY_NEW_MEASURE_READY in 
+    // VL53L0X_SetGPIOConfig();
+    const uint8_t VL53L0X_GPIOFUNCTIONALITY_NEW_MEASURE_READY = 0x04;
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, SYSTEM_INTERRUPT_GPIO_CONFIG, VL53L0X_GPIOFUNCTIONALITY_NEW_MEASURE_READY);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed writing SYSTEM_INTERRUPT_GPIO_CONFIG"))
+
+    uint8_t gpio_hv_mux_active_high_val;
+    SimpleSlam::I2C_Mem_Read_Single(VL53L0X_I2C_DEVICE_ADDRESS, GPIO_HV_MUX_ACTIVE_HIGH, &gpio_hv_mux_active_high_val);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed reading GPIO_HV_MUX_ACTIVE_HIGH"))
+
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, GPIO_HV_MUX_ACTIVE_HIGH, gpio_hv_mux_active_high_val & 0xEF);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed updating GPIO_HV_MUX_ACTIVE_HIGH"))
+
+    status = SimpleSlam::I2C_Mem_Write_Single(VL53L0X_I2C_DEVICE_ADDRESS, SYSTEM_INTERRUPT_CLEAR, 0x01);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed writing SYSTEM_INTERRUPT_CLEAR"))
+
+    return {};
+}
+
+std::optional<SimpleSlam::VL53L0X::error_t> 
+SimpleSlam::VL53L0X::perform_ref_calibration() {
+    return {};
+}
+
+std::optional<SimpleSlam::VL53L0X::error_t> 
+SimpleSlam::VL53L0X::get_enabled_sequence_steps(enabled_steps_t& steps) {
+    // Read which part of the ranging sequence is enabled
+    uint8_t sequence_config;
+    HAL_StatusTypeDef status = SimpleSlam::I2C_Mem_Read_Single(VL53L0X_I2C_DEVICE_ADDRESS, SYSTEM_SEQUENCE_CONFIG, &sequence_config);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Could not read sequence config"))
+    printf("[VL53L0X]: sequence config %x\n", sequence_config);
+
+    steps.tcc          = (sequence_config >> 4) & 0x1;
+    steps.dss          = (sequence_config >> 3) & 0x1;
+    steps.msrc         = (sequence_config >> 2) & 0x1;
+    steps.pre_range    = (sequence_config >> 6) & 0x1;
+    steps.final_range  = (sequence_config >> 7) & 0x1;
+
+    return {};
+}
+
+std::optional<SimpleSlam::VL53L0X::error_t> 
+SimpleSlam::VL53L0X::get_sequence_steps_timeouts(enabled_steps_t& steps, timeouts_t& timeouts) {
+    HAL_StatusTypeDef status;
+    uint8_t byte_buffer = 0;
+    uint16_t two_byte_buffer = 0;
+    
+    auto maybe_error = get_vcsel_pulse_period(byte_buffer, VcselPulsePeriod::PRE_RANGE);
+    RETURN_IF_CONTAINS_ERROR(maybe_error);
+
+    timeouts.pre_range_vcsel_period_pclks = byte_buffer;
+
+
+    status = SimpleSlam::I2C_Mem_Read_Single(VL53L0X_I2C_DEVICE_ADDRESS, MSRC_CONFIG_TIMEOUT_MACROP, &byte_buffer);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed reading MSRC config timeout"))
+
+    timeouts.msrc_dss_tcc_mclks = byte_buffer + 1;
+    timeouts.msrc_dss_tcc_us = convert_timeout_clocks_to_microseconds(
+        timeouts.msrc_dss_tcc_mclks,
+        timeouts.pre_range_vcsel_period_pclks
+    );
+
+    status = SimpleSlam::I2C_Mem_Read_Single(
+        VL53L0X_I2C_DEVICE_ADDRESS, PRE_RANGE_CONFIG_TIMEOUT_MACROP_HI, 
+        ((uint8_t*)&two_byte_buffer + 1));
+    status = SimpleSlam::I2C_Mem_Read_Single(
+        VL53L0X_I2C_DEVICE_ADDRESS, PRE_RANGE_CONFIG_TIMEOUT_MACROP_LO, 
+        (uint8_t*)&two_byte_buffer);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed reading pre-range config timeout"))
+
+    timeouts.pre_range_mclks = decode_timeout(two_byte_buffer);
+    timeouts.pre_range_us = convert_timeout_clocks_to_microseconds(
+        timeouts.pre_range_mclks,
+        timeouts.pre_range_vcsel_period_pclks
+    );
+    
+    maybe_error = get_vcsel_pulse_period(byte_buffer, VcselPulsePeriod::FINAL_RANGE);
+    RETURN_IF_CONTAINS_ERROR(maybe_error);
+
+    timeouts.final_range_vcsel_period_pclks = byte_buffer;
+
+    status = SimpleSlam::I2C_Mem_Read_Single(
+        VL53L0X_I2C_DEVICE_ADDRESS, FINAL_RANGE_CONFIG_TIMEOUT_MACROP_HI, 
+       ((uint8_t*)&two_byte_buffer + 1));
+    status = SimpleSlam::I2C_Mem_Read_Single(
+        VL53L0X_I2C_DEVICE_ADDRESS, FINAL_RANGE_CONFIG_TIMEOUT_MACROP_LO, 
+       (uint8_t*)&two_byte_buffer);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed reading final-range config timeout"))
+
+    timeouts.final_range_mclks = decode_timeout(two_byte_buffer);
+
+    if (steps.pre_range) {
+        timeouts.final_range_mclks -= timeouts.pre_range_mclks;
+    }
+
+    timeouts.final_range_us = convert_timeout_clocks_to_microseconds(
+        timeouts.final_range_mclks,
+        timeouts.final_range_vcsel_period_pclks
+    );
+
+    return {};
+}
+
+std::optional<SimpleSlam::VL53L0X::error_t>  
+SimpleSlam::VL53L0X::get_vcsel_pulse_period(uint8_t& pulse_period, VcselPulsePeriod period) {
+    HAL_StatusTypeDef status;
+    uint8_t read_pulse_period;
+    switch (period)
+    {
+        case SimpleSlam::VL53L0X::VcselPulsePeriod::PRE_RANGE:
+            status = SimpleSlam::I2C_Mem_Read_Single(VL53L0X_I2C_DEVICE_ADDRESS, PRE_RANGE_CONFIG_VCSEL_PERIOD, &read_pulse_period);
+            RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Could not read pre-reange vcsel period"))
+            pulse_period = (read_pulse_period + 1) << 1;
+            break;
+        case SimpleSlam::VL53L0X::VcselPulsePeriod::FINAL_RANGE:
+            status = SimpleSlam::I2C_Mem_Read_Single(VL53L0X_I2C_DEVICE_ADDRESS, FINAL_RANGE_CONFIG_VCSEL_PERIOD, &read_pulse_period);
+            RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Could not read final-range vcsel period"))
+            pulse_period = (read_pulse_period + 1) << 1;
+            break;
+        default:
+            pulse_period = 255;
+    } 
+    return {};
+}
+
+uint32_t 
+SimpleSlam::VL53L0X::convert_timeout_clocks_to_microseconds(uint16_t period_mclks, uint16_t period_pclks) {
+    uint32_t macro_period_ns = (((2304 * period_pclks) * 1655) + 500) / 1000;
+    return ((period_mclks * macro_period_ns) + 500) / 1000;
+}
+
+uint16_t 
+SimpleSlam::VL53L0X::convert_timeout_us_to_mlcks(uint32_t timeout_us, u_int16_t period_pclks) {
+    uint32_t macro_period_ns = (((2304 * period_pclks) * 1655) + 500) / 1000;
+    return (((timeout_us * 1000) + (macro_period_ns / 2)) / macro_period_ns);
+}
+
+uint16_t 
+SimpleSlam::VL53L0X::decode_timeout(uint16_t timeout_val) {
+    return (uint16_t)((timeout_val & 0x00FF) <<
+            (uint16_t)((timeout_val & 0xFF00) >> 8)) + 1;
+}
+
+uint16_t 
+SimpleSlam::VL53L0X::encode_timeout(uint16_t timeout_mclks) {
+    uint32_t ls_byte = 0;
+    uint16_t ms_byte = 0;
+
+    if (timeout_mclks > 0)
+    {
+        ls_byte = timeout_mclks - 1;
+
+        while ((ls_byte & 0xFFFFFF00) > 0)
+        {
+            ls_byte >>= 1;
+            ms_byte++;
+        }
+
+        return (ms_byte << 8) | (ls_byte & 0xFF);
+    }
+    return 0;
+}
