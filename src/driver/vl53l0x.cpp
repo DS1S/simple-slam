@@ -380,7 +380,7 @@ std::optional<SimpleSlam::VL53L0X::error_t> SimpleSlam::VL53L0X::Perform_Single_
 
     // The value will become 8190 if there is no obstacle in its path. So
     // set to 0 as we are not "seeing" anything.
-    if (buffer == 8190) {
+    if (buffer == 8190 || buffer == 8191) {
         buffer = 0;
     }
 
