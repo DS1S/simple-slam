@@ -2,7 +2,7 @@
 
 #include "driver/i2c.h"
 #include "driver/vl53l0x.h"
-#include "driver/accelerometer.h"
+#include "driver/lsm6dsl.h"
 
 
 int main() {

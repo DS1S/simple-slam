@@ -1,4 +1,4 @@
-#include "driver/accelerometer.h"
+#include "driver/lsm6dsl.h"
 #include "driver/i2c.h"
 #include "mbed.h"
 
