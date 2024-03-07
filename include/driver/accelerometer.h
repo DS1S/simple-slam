@@ -1,6 +1,26 @@
 #include "stm32l4xx_hal.h"
+#include <utility>
+#include <string>
+#include <optional>
 
 namespace SimpleSlam::LSM6DSL {
+
+// Error handling
+enum class ErrorCode {
+    I2C_ERROR = 1,
+    WHO_AM_I_UNEXPECTED_VALUE = 2,
+};
+
+typedef std::pair<ErrorCode, std::string> error_t;
+
+#define RETURN_IF_CONTAINS_ERROR(maybe_error) if (maybe_error.has_value()) { return maybe_error; }
+#define RETURN_IF_STATUS_NOT_OK(status, code, message)  \
+    if (status != HAL_StatusTypeDef::HAL_OK)            \
+    {                                                   \
+        return std::make_optional(std::make_pair(       \
+            code,                                       \
+            message));                                  \
+    }                                                   \
 
 #define ACCEL_I2C_ADDRESS 0xD4 // from Discovery Board user manual pg. 29
 #define ACCEL_READ_REG_X_LOW 0x28 // from LSM6DSL data sheet pg. 49
@@ -29,17 +49,17 @@ namespace SimpleSlam::LSM6DSL {
 /**
  * Write configuration settings to Accelerometer control register
 */
-void Accel_Init();
-void Accel_DeInit();
+std::optional<error_t> Accel_Init();
+std::optional<error_t> Accel_DeInit();
 
 /**
  * Read raw accelerometer data into buffer
 */
-HAL_StatusTypeDef Accel_Read_Raw(int16_t* buffer);
+std::optional<error_t> Accel_Read_Raw(int16_t* buffer);
 /**
  * Read accelerometer data (in mg) into buffer
  * Includes conversion with sensitivity
 */
-HAL_StatusTypeDef Accel_Read(int16_t* buffer);
+std::optional<error_t> Accel_Read(int16_t* buffer);
 
 }
