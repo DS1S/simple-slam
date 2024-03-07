@@ -42,20 +42,23 @@ typedef std::pair<ErrorCode, std::string> error_t;
 // Bit[4:5]: Sensitivity Scale (Set to 2G uncertainty)
 // Bit[6]: Low Pass Filter 1's bandwidth (Ignored since LPF2 is used)
 // Bit[7]: Analog Bandwidth (Set to 1.5kHz)
-#define ACCEL_ODR_LOW_POWER 0b00000000
-#define ACCEL_ODR_6660HZ 0b10100000 // Highest performance data rate
-#define ACCEL_2G_SENSITIVITY_SCALE 0b000000
-#define ACCEL_LPF1_BW 0b00
-#define ACCEL_ANALOG_BANDWIDTH 0b0
+#define ACCEL_ODR_LOW_POWER 0x00
+#define ACCEL_ODR_6660HZ 0xA0 // Highest performance data rate
+#define ACCEL_2G_SENSITIVITY_SCALE 0x00
+#define ACCEL_LPF1_BW 0x00
+#define ACCEL_ANALOG_BANDWIDTH 0x00
 #define ACCEL_SENSITIVITY 0.061f // from LSM6DSL data sheet pg. 21
 
 // Control Options for Ctrl 3 - LSM6DSL data sheet pg. 62
-#define ACCEL_SW_RESET 0b00000001
+#define ACCEL_SW_RESET 0x01
 
 // Control Options for Ctrl 8 - LSM6DSL data sheet pg. 66
-#define ACCEL_LPF2_XL_EN 0b10000000 // Enable LPF2
-#define ACCEL_LPF2_CUTOFF 0b1100000 // Low-pass cutoff: ODR/400
-#define HP_SLOPE_XL_EN 0b000 // Use Low-pass
+// Bit[0]: Enable LPF2
+// Bit[1:3]: The threshold for low-pass filter
+// Bit[5]: Whether filter is low or high-pass
+#define ACCEL_LPF2_XL_EN 0x80 // Enable LPF2
+#define ACCEL_LPF2_CUTOFF 0x60 // Low-pass cutoff: ODR/400
+#define HP_SLOPE_XL_EN 0x00 // Use Low-pass
 
 /**
  * Write configuration settings to Accelerometer control register

@@ -14,7 +14,7 @@ std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Accel_Init() {
     }
 
     // Ctrl1 options: ODR, Sensitivity, Bandwidth
-    uint8_t ctrl_1 = ACCEL_ODR_6660HZ + ACCEL_2G_SENSITIVITY_SCALE + ACCEL_ANALOG_BANDWIDTH;
+    uint8_t ctrl_1 = ACCEL_ODR_6660HZ | ACCEL_2G_SENSITIVITY_SCALE | ACCEL_ANALOG_BANDWIDTH;
     status = I2C_Mem_Write_Single(
         ACCEL_I2C_ADDRESS,
         ACCEL_CTRL_1_REG,
@@ -23,7 +23,7 @@ std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Accel_Init() {
     RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, "Failed to write to Ctrl 1");
 
     // Ctrl8 options: Noise Filtering
-    uint8_t ctrl_8 = ACCEL_LPF2_XL_EN + ACCEL_LPF2_CUTOFF + HP_SLOPE_XL_EN;
+    uint8_t ctrl_8 = ACCEL_LPF2_XL_EN | ACCEL_LPF2_CUTOFF | HP_SLOPE_XL_EN;
     status = I2C_Mem_Write_Single(
         ACCEL_I2C_ADDRESS,
         ACCEL_CTRL_8_REG,
@@ -45,7 +45,7 @@ std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Accel_DeInit() 
     RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, "Failed to write to Ctrl 3");
 
     // Power Down
-    uint8_t ctrl_1 = ACCEL_ODR_LOW_POWER + ACCEL_2G_SENSITIVITY_SCALE + ACCEL_ANALOG_BANDWIDTH;
+    uint8_t ctrl_1 = ACCEL_ODR_LOW_POWER | ACCEL_2G_SENSITIVITY_SCALE | ACCEL_ANALOG_BANDWIDTH;
     status = I2C_Mem_Write_Single(
         ACCEL_I2C_ADDRESS,
         ACCEL_CTRL_1_REG,
