@@ -17,14 +17,14 @@ int main() {
     if (result.has_value()) {
         printf("Result: %s\n", result.value().second.c_str());
     }
-    SimpleSlam::Accel_Init();
+    SimpleSlam::LSM6DSL::Accel_Init();
     printf("Finished init\n");
     uint16_t distance = 0;
     int16_t accel_buffer[3];
     while(true) {
         SimpleSlam::VL53L0X::Perform_Single_Shot_Read(distance);
         printf("%u mm\n", distance);
-        SimpleSlam::Accel_Read(accel_buffer);
+        SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
         printf("ACCELEROMETER (x, y, z) = (%d mg, %d mg, %d mg)\n",
             accel_buffer[0], accel_buffer[1], accel_buffer[2]
         );
