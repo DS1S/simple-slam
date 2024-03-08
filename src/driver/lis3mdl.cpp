@@ -101,7 +101,7 @@ std::optional<SimpleSlam::LIS3MDL::error_t> SimpleSlam::LIS3MDL::Init(
  */
 std::optional<SimpleSlam::LIS3MDL::error_t> SimpleSlam::LIS3MDL::ReadXYZ(
     int16_t *x, int16_t *y, int16_t *z) {
-    printf("LIS3MDL::ReadXYZ\n");
+//    printf("LIS3MDL::ReadXYZ\n");
 
     // The addresses are consecutive, so we can read 6 bytes in one go
     // This chip uses low and high registers, so we need to do shifting

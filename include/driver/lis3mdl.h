@@ -50,6 +50,15 @@ typedef struct {
     uint8_t fullScale;  // 4, 8, 12, 16 gauss (default: 4)
 } LIS3MDL_Config_t;
 
+//typedef struct {
+//    int16_t minX;
+//    int16_t maxX;
+//    int16_t minY;
+//    int16_t maxY;
+//    int16_t minZ;
+//    int16_t maxZ;
+//} LIS3MDL_Data_t;
+
 std::optional<error_t> Init(const LIS3MDL_Config_t& config);
 std::optional<error_t> ReadXYZ(int16_t* x, int16_t* y, int16_t* z);
 
