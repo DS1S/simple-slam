@@ -1,9 +1,19 @@
-#include "mbed.h"
+#include <cmath>
 
 #include "driver/i2c.h"
-#include "driver/vl53l0x.h"
+#include "driver/lis3mdl.h"
 #include "driver/lsm6dsl.h"
+#include "driver/vl53l0x.h"
+#include "mbed.h"
 
+typedef struct {
+    int16_t minX;
+    int16_t maxX;
+    int16_t minY;
+    int16_t maxY;
+    int16_t minZ;
+    int16_t maxZ;
+} offset_vars;
 
 int main() {
     printf("Starting Simple-Slam\n");
@@ -21,14 +31,74 @@ int main() {
     printf("Finished init\n");
     uint16_t distance = 0;
     int16_t accel_buffer[3];
-    while(true) {
+    while (true) {
         SimpleSlam::VL53L0X::Perform_Single_Shot_Read(distance);
         printf("%u mm\n", distance);
         SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
         printf("ACCELEROMETER (x, y, z) = (%d mg, %d mg, %d mg)\n",
-            accel_buffer[0], accel_buffer[1], accel_buffer[2]
-        );
+               accel_buffer[0], accel_buffer[1], accel_buffer[2]);
         ThisThread::sleep_for(300ms);
     }
+}
+
+int test_magetometer() {
+    SimpleSlam::LIS3MDL::LIS3MDL_Config_t config{
+        .output_rate = LOPTS_OUTPUT_RATE_80_HZ,  // 80 Hz
+        .full_scale = LOPTS_FULL_SCALE_4_GAUSS,  // 4 gauss
+        .bdu = 0,                                // Block data update off
+    };
+
+    auto result2 = SimpleSlam::LIS3MDL::Init(config);
+    if (result2.has_value()) {
+        printf("Result: %s\n", result.value().second.c_str());
+    }
+
+    int16_t x = 0;
+    int16_t y = 0;
+    int16_t z = 0;
+
+    offset_vars data{
+        .minX = 999,
+        .maxX = -999,
+        .minY = 999,
+        .maxY = -999,
+        .minZ = 999,
+        .maxZ = -999,
+    };
+
+    while (true) {
+        SimpleSlam::LIS3MDL::ReadXYZ(x, y, z);
+
+        int16_t offsetX = (data.maxX - data.minX) / 2;
+        int16_t offsetY = (data.maxY - data.minY) / 2;
+        int16_t offsetZ = (data.maxZ - data.minZ) / 2;
+
+        double headingRadians = std::atan2(
+            y + offsetY, z + offsetZ);  // Calculate heading in radians
+        double headingDegrees =
+            headingRadians * (180.0 / 3.14);  // Convert to degrees
+
+        // Ensure the heading is between 0-360 degrees
+        if (headingDegrees < 0) {
+            headingDegrees += 360;
+        }
+
+        printf("Heading: %i (X: %d, Y: %d, Z: %d)\n", (int)headingDegrees,
+               x + offsetX, y + offsetY, z + offsetZ);
+        printf("Min: X: %d, Y: %d, Z: %d\n", data.minX, data.minY, data.minZ);
+        printf("Max: X: %d, Y: %d, Z: %d\n", data.maxX, data.maxY, data.maxZ);
+        printf("--------------------\n");
+
+        // Calibrate readings
+        data.minX = std::min(data.minX, x);
+        data.maxX = std::max(data.maxX, x);
+        data.minY = std::min(data.minY, y);
+        data.maxY = std::max(data.maxY, y);
+        data.minZ = std::min(data.minZ, z);
+        data.maxZ = std::max(data.maxZ, z);
+
+        ThisThread::sleep_for(300ms);
+    }
+
     return 0;
 }
