@@ -3,6 +3,7 @@
 #include "driver/i2c.h"
 #include "driver/lis3mdl.h"
 #include "driver/lsm6dsl.h"
+#include "driver/vl53l0x.h"
 #include "math/conversion.h"
 
 typedef struct {
@@ -23,32 +24,43 @@ int main() {
         .bdu = 0,                                // Block data update off
     };
 
+    SimpleSlam::VL53L0X::VL53L0X_Config_t tof_config{
+        .is_voltage_2v8_mode = true,
+    };
+
     SimpleSlam::I2C_Init();
     SimpleSlam::LSM6DSL::Accel_Init();
     SimpleSlam::LIS3MDL::Init(config);
+    SimpleSlam::VL53L0X::Init(tof_config);    
 
     int16_t accel_buffer[3];
     int16_t magno_buffer[3];
+    uint16_t tof_distance = 0;
     while(true) {
         SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
-        printf("ACCELEROMETER (x, y, z) = (%d mg, %d mg, %d mg)\n",
-            accel_buffer[0], accel_buffer[1], accel_buffer[2]
-        );
         SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1], magno_buffer[2]);
         SimpleSlam::Math::Vector3 temp_accel(accel_buffer[0], accel_buffer[1], accel_buffer[2]);
 
-        printf("MAGNETOMETER (x, y, z) = (%d mg, %d mg, %d mg)\n",
-            magno_buffer[0], magno_buffer[1], magno_buffer[2]
-        );
         SimpleSlam::Math::Vector3 temp_magno(magno_buffer[0], magno_buffer[1], magno_buffer[2]);
+
+        SimpleSlam::VL53L0X::Perform_Single_Shot_Read(tof_distance);
+        tof_distance /= 10;
 
         SimpleSlam::Math::Vector3 north_vector(temp_magno.normalize());
         SimpleSlam::Math::Vector3 up_vector(temp_accel.normalize());
         SimpleSlam::Math::Vector3 tof_vector(0, 0, 1);
         SimpleSlam::Math::Vector2 tof_direction_vector = SimpleSlam::Math::convert_tof_direction_vector(north_vector, up_vector, tof_vector);
-        printf("Direction Vector: %s, %f\n", tof_direction_vector.normalize().to_string().c_str(), tof_direction_vector.normalize());
-        SimpleSlam::Math::Vector2 mapped_point = SimpleSlam::Math::convert_to_spatial_point(tof_direction_vector.normalize(), 40);
-        printf("Spatial Vector: %s\n", mapped_point.to_string().c_str());
+        SimpleSlam::Math::Vector2 mapped_point = SimpleSlam::Math::convert_to_spatial_point(tof_direction_vector.normalize(), tof_distance);
+
+        printf("TOF SENSOR DISTANCE: %dcm\n", tof_distance);
+        printf("ACCELEROMETER (x, y, z) = (%d mg, %d mg, %d mg)\n",
+            accel_buffer[0], accel_buffer[1], accel_buffer[2]);
+        printf("MAGNETOMETER (x, y, z) = (%d mg, %d mg, %d mg)\n",
+            magno_buffer[0], magno_buffer[1], magno_buffer[2]);
+        printf("Direction Vector: %s, %f\n", 
+            tof_direction_vector.normalize().to_string().c_str(), tof_direction_vector.normalize());
+        printf("Spatial Vector: %s\n", 
+            mapped_point.to_string().c_str());
         ThisThread::sleep_for(1s);
     }
 }
