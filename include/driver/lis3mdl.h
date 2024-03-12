@@ -38,6 +38,22 @@ namespace SimpleSlam::LIS3MDL {
 #define SENSITIVITY_12G 2281
 #define SENSITIVITY_16G 1711
 
+// Output rate options
+#define LOPTS_OUTPUT_RATE_0_625_HZ 0
+#define LOPTS_OUTPUT_RATE_1_25_HZ 1
+#define LOPTS_OUTPUT_RATE_2_5_HZ 2
+#define LOPTS_OUTPUT_RATE_5_HZ 3
+#define LOPTS_OUTPUT_RATE_10_HZ 4
+#define LOPTS_OUTPUT_RATE_20_HZ 5
+#define LOPTS_OUTPUT_RATE_40_HZ 6
+#define LOPTS_OUTPUT_RATE_80_HZ 7
+
+// Scale options
+#define LOPTS_FULL_SCALE_4_GAUSS 0
+#define LOPTS_FULL_SCALE_8_GAUSS 1
+#define LOPTS_FULL_SCALE_12_GAUSS 2
+#define LOPTS_FULL_SCALE_16_GAUSS 3
+
 enum class ErrorCode {
     I2C_ERROR = 1,
     WHO_AM_I_UNEXPECTED_VALUE = 2,
@@ -46,20 +62,11 @@ typedef std::pair<ErrorCode, std::string> error_t;
 
 typedef struct {
     // Heads up: These use indexes, not the actual values
-    uint8_t outputRate; // 0.625, 1.25, 2.5, 5, 10, 20, 40, 80 Hz (default: 40)
-    uint8_t fullScale;  // 4, 8, 12, 16 gauss (default: 4)
+    uint8_t outputRate;  // 0.625, 1.25, 2.5, 5, 10, 20, 40, 80 Hz (default: 40)
+    uint8_t fullScale;   // 4, 8, 12, 16 gauss (default: 4)
 } LIS3MDL_Config_t;
 
-//typedef struct {
-//    int16_t minX;
-//    int16_t maxX;
-//    int16_t minY;
-//    int16_t maxY;
-//    int16_t minZ;
-//    int16_t maxZ;
-//} LIS3MDL_Data_t;
-
 std::optional<error_t> Init(const LIS3MDL_Config_t& config);
-std::optional<error_t> ReadXYZ(int16_t* x, int16_t* y, int16_t* z);
+std::optional<error_t> ReadXYZ(int16_t& x, int16_t& y, int16_t& z);
 
 }  // namespace SimpleSlam::LIS3MDL

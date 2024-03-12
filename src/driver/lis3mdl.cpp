@@ -1,7 +1,7 @@
 /**
-* LIS3MDL Module Driver
-* Author: Makan Dehizadeh
-*/
+ * LIS3MDL Module Driver
+ * Author: Makan Dehizadeh
+ */
 
 #include "driver/lis3mdl.h"
 
@@ -19,7 +19,7 @@
  * @param config Configuration for the LIS3MDL module
  */
 std::optional<SimpleSlam::LIS3MDL::error_t> SimpleSlam::LIS3MDL::Init(
-    const LIS3MDL_Config_t &config) {
+    const LIS3MDL_Config_t& config) {
     printf("LIS3MDL::Init\n");
 
     // Validate the who am i register
@@ -100,35 +100,60 @@ std::optional<SimpleSlam::LIS3MDL::error_t> SimpleSlam::LIS3MDL::Init(
  * @param z Pointer to the Z value
  */
 std::optional<SimpleSlam::LIS3MDL::error_t> SimpleSlam::LIS3MDL::ReadXYZ(
-    int16_t *x, int16_t *y, int16_t *z) {
-//    printf("LIS3MDL::ReadXYZ\n");
+    int16_t& x, int16_t& y, int16_t& z) {
+    //    printf("LIS3MDL::ReadXYZ\n");
 
     // The addresses are consecutive, so we can read 6 bytes in one go
     // This chip uses low and high registers, so we need to do shifting
-    uint8_t buffer[6];
+    // we cast the buffer to a uint8_t so buffer stores high low for each axis
+    uint16_t buffer[3];
     HAL_StatusTypeDef status =
         I2C_Mem_Read(LIS3MDL_I2C_DEVICE_ADDRESS, REG_X_L, I2C_MEMADD_SIZE_8BIT,
-                     &buffer[0], 6);
+                     (uint8_t*)&buffer[0], 6);
     RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, "Error reading XYZ");
 
-    *x = (buffer[1] << 8) | buffer[0];
-    *y = (buffer[3] << 8) | buffer[2];
-    *z = (buffer[5] << 8) | buffer[4];
+    // we use 16 bit buffers, but pass as 8 bit to the I2C functions
+    // they automatically grab the low and high registers in the right order
+    x = buffer[0];
+    y = buffer[1];
+    z = buffer[2];
 
     // Read the control register 2 to get the sensitivity
-    u_int8_t reg2Value = 0;
-    status = I2C_Mem_Read_Single(LIS3MDL_I2C_DEVICE_ADDRESS, REG_CTRL_2,
-                                 &reg2Value);
+    uint8_t reg2Value = 0;
+    status =
+        I2C_Mem_Read_Single(LIS3MDL_I2C_DEVICE_ADDRESS, REG_CTRL_2, &reg2Value);
     RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR,
-                        "Error reading control register 2");
+                            "Error reading control register 2");
 
     // Now we handle the sensitivity
     // Note: The sensitivity is in milligauss
-    int sensitivity_values[] = { SENSITIVITY_4G, SENSITIVITY_8G, SENSITIVITY_12G, SENSITIVITY_16G };
-    double sensitivity = 1000.0 / sensitivity_values[(reg2Value >> 5) & 0x03];
-    *x *= sensitivity;
-    *y *= sensitivity;
-    *z *= sensitivity;
+    int filter;
+    switch ((reg2Value >> 5) & 0x03) {
+        case 0:
+            filter = SENSITIVITY_4G;
+            break;
+        case 1:
+            filter = SENSITIVITY_8G;
+            break;
+        case 2:
+            filter = SENSITIVITY_12G;
+            break;
+        case 3:
+            filter = SENSITIVITY_16G;
+            break;
+        default:
+            return std::make_optional(std::make_pair(
+                ErrorCode::I2C_ERROR, "Invalid sensitivity value"));
+    }
+
+    // The data sheet uses LSB/gauss, but we want mGauss
+    // Divide the raw value by the sensitivity for gauss, then multiply by 1000
+    // for mGauss
+    // TODO: Someone verify this math
+    double sensitivity = 1000.0 / filter;
+    x *= sensitivity;
+    y *= sensitivity;
+    z *= sensitivity;
 
     return {};
 }
