@@ -1,6 +1,9 @@
 #include <math.h>
 #include "math/vector.h"
 
+/**
+ * Vector 3 Implementation
+*/
 SimpleSlam::Math::Vector3::Vector3(double x, double y, double z) 
     : _x{x}, _y{y}, _z{z} {}
 
@@ -54,7 +57,6 @@ std::string SimpleSlam::Math::Vector3::to_string() const {
         append(std::to_string(_z)).
         append("]");
 }
-
 
 /**
  * Vector 2 Implementation
