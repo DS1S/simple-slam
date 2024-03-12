@@ -14,5 +14,5 @@ SimpleSlam::Math::Vector2 SimpleSlam::Math::convert_tof_direction_vector(
 }
 
 SimpleSlam::Math::Vector2 SimpleSlam::Math::convert_to_spatial_point(const Vector2& tof_direction_vector, uint16_t tof_distance) {
-    // return tof_distance * tof_direction_vector;
+    return tof_direction_vector * (double)tof_distance;
 }
