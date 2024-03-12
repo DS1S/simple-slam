@@ -1,10 +1,9 @@
-#include <cmath>
+#include "mbed.h"
 
 #include "driver/i2c.h"
 #include "driver/lis3mdl.h"
 #include "driver/lsm6dsl.h"
-#include "driver/vl53l0x.h"
-#include "mbed.h"
+#include "math/conversion.h"
 
 typedef struct {
     int16_t minX;
@@ -18,26 +17,20 @@ typedef struct {
 int main() {
     printf("Starting Simple-Slam\n");
     SimpleSlam::I2C_Init();
-
-    const SimpleSlam::VL53L0X::VL53L0X_Config_t tof_config{
-        .is_voltage_2v8_mode = true,
-    };
-
-    auto result = SimpleSlam::VL53L0X::Init(tof_config);
-    if (result.has_value()) {
-        printf("Result: %s\n", result.value().second.c_str());
-    }
     SimpleSlam::LSM6DSL::Accel_Init();
-    printf("Finished init\n");
-    uint16_t distance = 0;
     int16_t accel_buffer[3];
-    while (true) {
-        SimpleSlam::VL53L0X::Perform_Single_Shot_Read(distance);
-        printf("%u mm\n", distance);
+    while(true) {
         SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
         printf("ACCELEROMETER (x, y, z) = (%d mg, %d mg, %d mg)\n",
-               accel_buffer[0], accel_buffer[1], accel_buffer[2]);
-        ThisThread::sleep_for(300ms);
+            accel_buffer[0], accel_buffer[1], accel_buffer[2]
+        );
+        SimpleSlam::Math::Vector3 temp(accel_buffer[0], accel_buffer[1], accel_buffer[2]);
+
+        SimpleSlam::Math::Vector3 north_vector(1, 0, 0);
+        SimpleSlam::Math::Vector3 up_vector(temp.normalize());
+        SimpleSlam::Math::Vector3 tof_vector(0, 0, 1);
+        SimpleSlam::Math::Vector2 tof_direction_vector = SimpleSlam::Math::convert_tof_direction_vector(north_vector, up_vector, tof_vector);
+        ThisThread::sleep_for(500ms);
     }
 }
 
@@ -48,8 +41,8 @@ int test_magetometer() {
         .bdu = 0,                                // Block data update off
     };
 
-    auto result2 = SimpleSlam::LIS3MDL::Init(config);
-    if (result2.has_value()) {
+    auto result = SimpleSlam::LIS3MDL::Init(config);
+    if (result.has_value()) {
         printf("Result: %s\n", result.value().second.c_str());
     }
 
