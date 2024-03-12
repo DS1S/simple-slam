@@ -36,12 +36,12 @@
 
 #define RETURN_IF_CONTAINS_ERROR(maybe_error) if (maybe_error.has_value()) { return maybe_error; }
 #define RETURN_IF_STATUS_NOT_OK(status, code, message)  \
-    if (status != HAL_StatusTypeDef::HAL_OK)    \
-    {                                           \
-        std::make_optional(std::make_pair(      \
-            code,                               \
-            message));                          \
-    }                                           \
+    if (status != HAL_StatusTypeDef::HAL_OK)            \
+    {                                                   \
+        return std::make_optional(std::make_pair(       \
+            code,                                       \
+            message));                                  \
+    }                                                   \
 
 #define GET_BIT(i, arr) ((arr[i / 8] >> (i % 8)) & 0x01)
 #define UNSET_BIT(i, arr) (arr[i / 8] &= ~(1 << (i % 8)))

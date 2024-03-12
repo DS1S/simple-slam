@@ -26,10 +26,13 @@ int main() {
         );
         SimpleSlam::Math::Vector3 temp(accel_buffer[0], accel_buffer[1], accel_buffer[2]);
 
-        SimpleSlam::Math::Vector3 north_vector(1, 0, 0);
+        SimpleSlam::Math::Vector3 north_vector(-1, 0, 0);
         SimpleSlam::Math::Vector3 up_vector(temp.normalize());
         SimpleSlam::Math::Vector3 tof_vector(0, 0, 1);
         SimpleSlam::Math::Vector2 tof_direction_vector = SimpleSlam::Math::convert_tof_direction_vector(north_vector, up_vector, tof_vector);
+        printf("Direction Vector: %s\n", tof_direction_vector.to_string().c_str());
+        SimpleSlam::Math::Vector2 mapped_point = SimpleSlam::Math::convert_to_spatial_point(tof_direction_vector, 40);
+        printf("Spatial Vector: %s\n", mapped_point.to_string().c_str());
         ThisThread::sleep_for(500ms);
     }
 }

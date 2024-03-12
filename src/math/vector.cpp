@@ -44,6 +44,17 @@ SimpleSlam::Math::Vector3 SimpleSlam::Math::Vector3::operator/(double scalar) co
     return Vector3(_x / scalar , _y / scalar, _z / scalar);
 }
 
+std::string SimpleSlam::Math::Vector3::to_string() const {
+    return std::string().
+        append("[").
+        append(std::to_string(_x)).
+        append(", ").
+        append(std::to_string(_y)).
+        append(", ").
+        append(std::to_string(_z)).
+        append("]");
+}
+
 
 /**
  * Vector 2 Implementation
