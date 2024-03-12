@@ -62,11 +62,14 @@ typedef std::pair<ErrorCode, std::string> error_t;
 
 typedef struct {
     // Heads up: These use indexes, not the actual values
-    uint8_t outputRate;  // 0.625, 1.25, 2.5, 5, 10, 20, 40, 80 Hz (default: 40)
-    uint8_t fullScale;   // 4, 8, 12, 16 gauss (default: 4)
+    uint8_t
+        output_rate;     // 0.625, 1.25, 2.5, 5, 10, 20, 40, 80 Hz (default: 40)
+    uint8_t full_scale;  // 4, 8, 12, 16 gauss (default: 4)
+    uint8_t bdu;         // Block data update on or off (default: 0)
 } LIS3MDL_Config_t;
 
 std::optional<error_t> Init(const LIS3MDL_Config_t& config);
+std::optional<error_t> DeInit();
 std::optional<error_t> ReadXYZ(int16_t& x, int16_t& y, int16_t& z);
 
 }  // namespace SimpleSlam::LIS3MDL

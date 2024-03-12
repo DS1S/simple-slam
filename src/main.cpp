@@ -43,8 +43,9 @@ int main() {
 
 int test_magetometer() {
     SimpleSlam::LIS3MDL::LIS3MDL_Config_t config{
-        .outputRate = LOPTS_OUTPUT_RATE_80_HZ,  // 80 Hz
-        .fullScale = LOPTS_FULL_SCALE_4_GAUSS,  // 4 gauss
+        .output_rate = LOPTS_OUTPUT_RATE_80_HZ,  // 80 Hz
+        .full_scale = LOPTS_FULL_SCALE_4_GAUSS,  // 4 gauss
+        .bdu = 0,                                // Block data update off
     };
 
     auto result2 = SimpleSlam::LIS3MDL::Init(config);

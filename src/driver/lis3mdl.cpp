@@ -9,9 +9,9 @@
     if (maybe_error.has_value()) {            \
         return maybe_error;                   \
     }
-#define RETURN_IF_STATUS_NOT_OK(status, code, message)     \
-    if (status != HAL_StatusTypeDef::HAL_OK) {             \
-        std::make_optional(std::make_pair(code, message)); \
+#define RETURN_IF_STATUS_NOT_OK(status, code, message)            \
+    if (status != HAL_StatusTypeDef::HAL_OK) {                    \
+        return std::make_optional(std::make_pair(code, message)); \
     }
 
 /**
@@ -39,7 +39,7 @@ std::optional<SimpleSlam::LIS3MDL::error_t> SimpleSlam::LIS3MDL::Init(
     // Temp, OM1, OM0, DO2, DO1, DO0, FAST_ODR, ST
     // Note: Not using FAST_ODR yet, not needed and unknown noise in the data
     uint8_t regValue = 0x00;
-    uint8_t outputRate = config.outputRate;
+    uint8_t outputRate = config.output_rate;
     regValue |= (outputRate << 2);
     status =
         I2C_Mem_Write_Single(LIS3MDL_I2C_DEVICE_ADDRESS, REG_CTRL_1, regValue);
@@ -49,7 +49,7 @@ std::optional<SimpleSlam::LIS3MDL::error_t> SimpleSlam::LIS3MDL::Init(
     // Control Register 2
     // 0, FS1, FS0, 0, REBOOT, SOFT_RST, 0, 0
     regValue = 0x00;
-    uint8_t fullScale = config.fullScale;
+    uint8_t fullScale = config.full_scale;
     regValue |= (fullScale << 5);
     status =
         I2C_Mem_Write_Single(LIS3MDL_I2C_DEVICE_ADDRESS, REG_CTRL_2, regValue);
@@ -83,7 +83,7 @@ std::optional<SimpleSlam::LIS3MDL::error_t> SimpleSlam::LIS3MDL::Init(
     // FAST_READ, BDU, 0, 0, 0, 0, 0, 0
     // Note: We aren't using the FAST_READ mode, so we can leave it at 0
     // Note: BDU prevents reading while its writing (only writes when read)
-    regValue = 0x40;
+    regValue = (config.bdu ? 1 : 0) << 6;
     status =
         I2C_Mem_Write_Single(LIS3MDL_I2C_DEVICE_ADDRESS, REG_CTRL_5, regValue);
     RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR,
@@ -155,5 +155,24 @@ std::optional<SimpleSlam::LIS3MDL::error_t> SimpleSlam::LIS3MDL::ReadXYZ(
     y *= sensitivity;
     z *= sensitivity;
 
+    return {};
+}
+
+/**
+ * Deinitialize the LIS3MDL module
+ */
+std::optional<SimpleSlam::LIS3MDL::error_t> SimpleSlam::LIS3MDL::DeInit() {
+    printf("LIS3MDL::DeInit\n");
+
+    // Reset
+    HAL_StatusTypeDef status;
+    uint8_t ctrl_3 = 0x03;
+    status =
+        I2C_Mem_Write_Single(LIS3MDL_I2C_DEVICE_ADDRESS, REG_CTRL_2, ctrl_3);
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR,
+                            "Failed to write to Ctrl 2");
+
+    // No remaining work needed, magnetometer starts off by default.
+    // Has to be initialized again after this is called.
     return {};
 }
