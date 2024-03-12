@@ -7,7 +7,7 @@ SimpleSlam::Math::Vector2 SimpleSlam::Math::convert_tof_direction_vector(
     const Vector3& tof_vector
 ) {
     const Vector3 east_vector = north_vector.cross(up_vector);
-    printf("East Vector %s\n", east_vector.to_string().c_str());
+
     const double proj_x = tof_vector.dot(east_vector);
     const double proj_y = tof_vector.dot(north_vector);
 

@@ -16,24 +16,40 @@ typedef struct {
 
 int main() {
     printf("Starting Simple-Slam\n");
+
+    SimpleSlam::LIS3MDL::LIS3MDL_Config_t config{
+        .output_rate = LOPTS_OUTPUT_RATE_80_HZ,  // 80 Hz
+        .full_scale = LOPTS_FULL_SCALE_4_GAUSS,  // 4 gauss
+        .bdu = 0,                                // Block data update off
+    };
+
     SimpleSlam::I2C_Init();
     SimpleSlam::LSM6DSL::Accel_Init();
+    SimpleSlam::LIS3MDL::Init(config);
+
     int16_t accel_buffer[3];
+    int16_t magno_buffer[3];
     while(true) {
         SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
         printf("ACCELEROMETER (x, y, z) = (%d mg, %d mg, %d mg)\n",
             accel_buffer[0], accel_buffer[1], accel_buffer[2]
         );
-        SimpleSlam::Math::Vector3 temp(accel_buffer[0], accel_buffer[1], accel_buffer[2]);
+        SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1], magno_buffer[2]);
+        SimpleSlam::Math::Vector3 temp_accel(accel_buffer[0], accel_buffer[1], accel_buffer[2]);
 
-        SimpleSlam::Math::Vector3 north_vector(-1, 0, 0);
-        SimpleSlam::Math::Vector3 up_vector(temp.normalize());
+        printf("MAGNETOMETER (x, y, z) = (%d mg, %d mg, %d mg)\n",
+            magno_buffer[0], magno_buffer[1], magno_buffer[2]
+        );
+        SimpleSlam::Math::Vector3 temp_magno(magno_buffer[0], magno_buffer[1], magno_buffer[2]);
+
+        SimpleSlam::Math::Vector3 north_vector(temp_magno.normalize());
+        SimpleSlam::Math::Vector3 up_vector(temp_accel.normalize());
         SimpleSlam::Math::Vector3 tof_vector(0, 0, 1);
         SimpleSlam::Math::Vector2 tof_direction_vector = SimpleSlam::Math::convert_tof_direction_vector(north_vector, up_vector, tof_vector);
-        printf("Direction Vector: %s\n", tof_direction_vector.to_string().c_str());
-        SimpleSlam::Math::Vector2 mapped_point = SimpleSlam::Math::convert_to_spatial_point(tof_direction_vector, 40);
+        printf("Direction Vector: %s, %f\n", tof_direction_vector.normalize().to_string().c_str(), tof_direction_vector.normalize());
+        SimpleSlam::Math::Vector2 mapped_point = SimpleSlam::Math::convert_to_spatial_point(tof_direction_vector.normalize(), 40);
         printf("Spatial Vector: %s\n", mapped_point.to_string().c_str());
-        ThisThread::sleep_for(500ms);
+        ThisThread::sleep_for(1s);
     }
 }
 

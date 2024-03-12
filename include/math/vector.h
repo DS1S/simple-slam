@@ -30,6 +30,7 @@ class Vector2 {
         Vector2 operator*(double scalar) const;
         Vector2 operator/(double scalar) const;
         Vector2 normalize() const;
+        static void normalize(Vector2& vector);
         double magnitude() const;
         double get_x() const;
         double get_y() const;
@@ -40,4 +41,4 @@ class Vector2 {
         const double _y{0};
 };
 
-};
+}

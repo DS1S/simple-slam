@@ -14,4 +14,4 @@ Vector2 convert_tof_direction_vector(
 
 Vector2 convert_to_spatial_point(const Vector2& tof_direction_vector, uint16_t tof_distance);
 
-}   
+}
