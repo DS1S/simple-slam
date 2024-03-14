@@ -24,7 +24,9 @@ typedef std::pair<ErrorCode, std::string> error_t;
             message));                                  \
     }                                                   \
 
-#define ACCEL_I2C_ADDRESS 0xD4 // from Discovery Board user manual pg. 29
+#define I2C_ADDRESS 0xD4 // from Discovery Board user manual pg. 29
+#define WHO_AM_I_REG 0x0F
+
 #define ACCEL_READ_REG_X_LOW 0x28 // from LSM6DSL data sheet pg. 49
 #define ACCEL_READ_REG_X_HIGH 0x29
 #define ACCEL_READ_REG_Y_LOW 0x30
@@ -32,7 +34,6 @@ typedef std::pair<ErrorCode, std::string> error_t;
 #define ACCEL_READ_REG_Z_LOW 0x32
 #define ACCEL_READ_REG_Z_HIGH 0x33
 #define ACCEL_BUFFER_SIZE 6 // Reads 6 8-bit ints and stores as 3 16-bit ints
-#define ACCEL_WHO_AM_I_REG 0x0F
 
 #define GYRO_READ_REG_X_LOW 0x22
 #define GYRO_READ_REG_X_HIGH 0x23
@@ -44,12 +45,12 @@ typedef std::pair<ErrorCode, std::string> error_t;
 
 
 // Control registers - LSM6DSL data sheet pg. 49
-#define ACCEL_CTRL_1_REG 0x10
-#define ACCEL_CTRL_2_REG 0x11
-#define ACCEL_CTRL_3_REG 0x12
-#define ACCEL_CTRL_6_REG 0x15
-#define ACCEL_CTRL_7_REG 0x16
-#define ACCEL_CTRL_8_REG 0x17
+#define CTRL_1_REG 0x10
+#define CTRL_2_REG 0x11
+#define CTRL_3_REG 0x12
+#define CTRL_6_REG 0x15
+#define CTRL_7_REG 0x16
+#define CTRL_8_REG 0x17
 
 // Control Options for Ctrl 1 - LSM6DSL data sheet pg. 60
 // Bit[0:3]: ODR (Set to 6.66kHz)
