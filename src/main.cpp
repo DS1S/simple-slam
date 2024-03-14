@@ -9,6 +9,7 @@
 #include "driver/vl53l0x.h"
 #include "http_client/http_client.h"
 #include "math/conversion.h"
+#include "math/inertial_navigation.h";
 #include "mbed.h"
 
 typedef struct {
@@ -71,6 +72,7 @@ int main() {
     SimpleSlam::LSM6DSL::Gyro_Init();
     SimpleSlam::LIS3MDL::Init(config);
     SimpleSlam::VL53L0X::Init(tof_config);
+    SimpleSlam::Math::InertialNavigationSystem ins(1, SimpleSlam::Math::Vector3(0,0,0), SimpleSlam::Math::Vector3(0,0,0));
 
     int16_t accel_buffer[3];
     int16_t gyro_buffer[3];
@@ -103,7 +105,24 @@ int main() {
 
     Thread t;
     t.start(test_http_client);
-    while (true) {
+    
+    while(true){
+        SimpleSlam::Math::Vector3 pos = ins.get_position();
+        printf("POS %s\n", pos.to_string().c_str());
+
+        SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
+        SimpleSlam::LSM6DSL::Gyro_Read(gyro_buffer);
+
+        SimpleSlam::Math::Vector3 temp_accel(accel_buffer[0], accel_buffer[1],
+                                             accel_buffer[2]);
+        SimpleSlam::Math::Vector3 temp_ang(gyro_buffer[0], gyro_buffer[1],
+                                             gyro_buffer[2]);
+        
+        ins.update_position(temp_ang, temp_accel);
+        ThisThread::sleep_for(1s);
+    }
+
+    while (false) {
         SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
         SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],
                                      magno_buffer[2]);
@@ -135,9 +154,9 @@ int main() {
                accel_buffer[0], accel_buffer[1], accel_buffer[2]);
         printf("MAGNETOMETER (x, y, z) = (%d mg, %d mg, %d mg)\n",
                magno_buffer[0], magno_buffer[1], magno_buffer[2]);
-        printf("Direction Vector: %s, %f\n",
-               tof_direction_vector.normalize().to_string().c_str(),
-               tof_direction_vector.normalize());
+        // printf("Direction Vector: %s, %f\n",
+        //        tof_direction_vector.normalize().to_string().c_str(),
+        //        tof_direction_vector.normalize().to_string().c_str());
         printf("Spatial Vector: %s\n", mapped_point.to_string().c_str());
 
         if (tof_distance > 25) {

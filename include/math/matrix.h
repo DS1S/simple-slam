@@ -9,13 +9,15 @@ namespace SimpleSlam::Math {
     */
     class Matrix3 {
         public:
-        Matrix3(const std::array<SimpleSlam::Math::Vector3, 3> matrix);
-        Vector3 operator[](const size_t index);
-        Matrix3 operator*(const Matrix3& other);
+        Matrix3(const std::array<Vector3, 3> matrix);
+        Vector3 operator[](const size_t index) const;
+        Matrix3 operator*(const Matrix3 other) const;
+        Vector3 operator*(const Vector3& other) const;
+        Matrix3 operator*(const double scalar) const;
+        Matrix3 operator+(const Matrix3 other) const;
 
         private:
-        std::array<SimpleSlam::Math::Vector3, 3> _matrix;
+        std::array<Vector3, 3> _matrix;
     };
 
-    const SimpleSlam::Math::Matrix3 IDENTITY_MATRIX({Vector3(1,0,0), Vector3(0,1,0), Vector3(0,0,1)});
 }
