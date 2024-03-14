@@ -40,6 +40,6 @@ func collect(c echo.Context) error {
 
 	c.Logger().Printf("Spatial Points: ", points.spatialPoints)
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"msg": points.spatialPoints,
+		"msg": "succesfully merged point data",
 	})
 }

@@ -27,6 +27,6 @@ func reset(c echo.Context) error {
 	delete(boards, rr.BoardID)
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"msg": "Succesfully reseted board",
+		"msg": "succesfully reseted board",
 	})
 }
