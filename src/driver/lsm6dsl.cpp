@@ -33,6 +33,45 @@ std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Accel_Init() {
     return {};
 }
 
+std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Gyro_Init() {
+    // Wait for peripheral to turn on
+    HAL_StatusTypeDef status;
+    uint8_t who_am_i_val = 0;
+    while (who_am_i_val == 0x00) {
+        status = SimpleSlam::I2C_Mem_Read_Single(ACCEL_I2C_ADDRESS, ACCEL_WHO_AM_I_REG, &who_am_i_val);
+        RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, std::string("Failed to read Who Am I"));
+    }
+
+    // CTRL2 Gyroscope Options: ODR, full-scale modes
+    uint8_t ctrl_2 = GYRO_ODR_6660HZ | GYRO_FS_G | GYRO_FS_125;
+    status = I2C_Mem_Write_Single(
+        ACCEL_I2C_ADDRESS,
+        ACCEL_CTRL_2_REG,
+        ctrl_2
+    );
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, "Failed to write to Ctrl 2");
+
+    // CTRL6 Gyroscope Options: low-pass filter
+    uint8_t ctrl_6 = GYRO_LOW_PASS_BANDWIDTH;
+    status = I2C_Mem_Write_Single(
+        ACCEL_I2C_ADDRESS,
+        ACCEL_CTRL_6_REG,
+        ctrl_6
+    );
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, "Failed to write to Ctrl 6");
+    
+    // CTRL7 Gyroscope Options: high-pass filter
+    uint8_t ctrl_7 = GYRO_HIGH_PASS_EN | GYRO_HIGH_PASS_BANDWIDTH;
+    status = I2C_Mem_Write_Single(
+        ACCEL_I2C_ADDRESS,
+        ACCEL_CTRL_7_REG,
+        ctrl_7
+    );
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, "Failed to write to Ctrl 7");
+
+    return {};
+}
+
 std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Accel_DeInit() {
     // Reset
     HAL_StatusTypeDef status;
@@ -56,6 +95,29 @@ std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Accel_DeInit() 
     return {};
 }
 
+std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Gyro_DeInit() {
+    // Reset
+    HAL_StatusTypeDef status;
+    uint8_t ctrl_3 = ACCEL_SW_RESET;
+    status = I2C_Mem_Write_Single(
+        ACCEL_I2C_ADDRESS,
+        ACCEL_CTRL_3_REG,
+        ctrl_3
+    );
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, "Failed to write to Ctrl 3");
+
+    // CTRL2 Gyroscope Options: ODR to power off
+    uint8_t ctrl_2 = GYRO_ODR_LOW_POWER | GYRO_FS_G | GYRO_FS_125;
+    status = I2C_Mem_Write_Single(
+        ACCEL_I2C_ADDRESS,
+        ACCEL_CTRL_2_REG,
+        ctrl_2
+    );
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, "Failed to write to Ctrl 2");
+
+    return {};
+}
+
 std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Accel_Read_Raw(int16_t* buffer) {
     HAL_StatusTypeDef status = I2C_Mem_Read(
         ACCEL_I2C_ADDRESS,
@@ -73,6 +135,27 @@ std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Accel_Read(int1
     RETURN_IF_CONTAINS_ERROR(maybe_error);
     for (int i = 0; i < 3; i++) {
         buffer[i] = buffer[i] * ACCEL_SENSITIVITY;
+    }
+    return {};
+}
+
+std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Gyro_Read_Raw(int16_t* buffer) {
+    HAL_StatusTypeDef status = I2C_Mem_Read(
+        ACCEL_I2C_ADDRESS,
+        GYRO_READ_REG_X_LOW,
+        1,
+        (uint8_t*) buffer,
+        GYRO_BUFFER_SIZE
+    );
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, "Failed to Read Gyroscope Data");
+    return {};
+}
+
+std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Gyro_Read(int16_t* buffer) {
+    auto maybe_error = Gyro_Read_Raw(buffer);
+    RETURN_IF_CONTAINS_ERROR(maybe_error);
+    for (int i = 0; i < 3; i++) {
+        buffer[i] = buffer[i] * GYRO_SENSITIVITY;
     }
     return {};
 }

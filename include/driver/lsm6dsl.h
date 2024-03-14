@@ -34,9 +34,21 @@ typedef std::pair<ErrorCode, std::string> error_t;
 #define ACCEL_BUFFER_SIZE 6 // Reads 6 8-bit ints and stores as 3 16-bit ints
 #define ACCEL_WHO_AM_I_REG 0x0F
 
+#define GYRO_READ_REG_X_LOW 0x22
+#define GYRO_READ_REG_X_HIGH 0x23
+#define GYRO_READ_REG_Y_LOW 0x24
+#define GYRO_READ_REG_Y_HIGH 0x25
+#define GYRO_READ_REG_Z_LOW 0x26
+#define GYRO_READ_REG_Z_HIGH 0x27
+#define GYRO_BUFFER_SIZE 6 // Reads 6 8-bit ints and stores as 3 16-bit ints
+
+
 // Control registers - LSM6DSL data sheet pg. 49
 #define ACCEL_CTRL_1_REG 0x10
+#define ACCEL_CTRL_2_REG 0x11
 #define ACCEL_CTRL_3_REG 0x12
+#define ACCEL_CTRL_6_REG 0x15
+#define ACCEL_CTRL_7_REG 0x16
 #define ACCEL_CTRL_8_REG 0x17
 
 // Control Options for Ctrl 1 - LSM6DSL data sheet pg. 60
@@ -50,6 +62,21 @@ typedef std::pair<ErrorCode, std::string> error_t;
 #define ACCEL_LPF1_BW 0x00
 #define ACCEL_ANALOG_BANDWIDTH 0x00
 #define ACCEL_SENSITIVITY 0.061f // from LSM6DSL data sheet pg. 21
+
+// Control Options for CTRL2-G Register - LSM6DSL data sheet pg. 61
+#define GYRO_ODR_LOW_POWER 0x00
+#define GYRO_ODR_6660HZ 0xA0
+#define GYRO_FS_G 0x00
+#define GYRO_FS_125 0x00
+#define GYRO_SENSITIVITY 8.75f
+
+// Control Options for CTRL6-G Register - LSM6DSL data sheet pg. 65
+#define GYRO_LOW_PASS_BANDWIDTH 0x03
+
+// Control Options for CTRL7-G Registers - LSM6DSL data sheet pg. 66
+#define GYRO_HIGH_PASS_EN 0x40
+#define GYRO_HIGH_PASS_BANDWIDTH 0x30
+
 
 // Control Options for Ctrl 3 - LSM6DSL data sheet pg. 62
 #define ACCEL_SW_RESET 0x01
@@ -69,6 +96,12 @@ std::optional<error_t> Accel_Init();
 std::optional<error_t> Accel_DeInit();
 
 /**
+ * Write configuration settings to Gyroscope control register
+*/
+std::optional<error_t> Gyro_Init();
+std::optional<error_t> Gyro_DeInit();
+
+/**
  * Read raw accelerometer data into buffer
 */
 std::optional<error_t> Accel_Read_Raw(int16_t* buffer);
@@ -77,5 +110,15 @@ std::optional<error_t> Accel_Read_Raw(int16_t* buffer);
  * Includes conversion with sensitivity
 */
 std::optional<error_t> Accel_Read(int16_t* buffer);
+
+/**
+ * Read raw gyroscope data into buffer
+*/
+std::optional<error_t> Gyro_Read_Raw(int16_t* buffer);
+/**
+ * Read gyroscope data (in dps) into buffer
+ * Includes conversion with sensitivity
+*/
+std::optional<error_t> Gyro_Read(int16_t* buffer);
 
 }

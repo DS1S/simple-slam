@@ -29,12 +29,22 @@ int main() {
 
     SimpleSlam::I2C_Init();
     SimpleSlam::LSM6DSL::Accel_Init();
+    SimpleSlam::LSM6DSL::Gyro_Init();
     SimpleSlam::LIS3MDL::Init(config);
     SimpleSlam::VL53L0X::Init(tof_config);
 
     int16_t accel_buffer[3];
+    int16_t gyro_buffer[3];
     int16_t magno_buffer[3];
     uint16_t tof_distance = 0;
+
+    while(false){
+        SimpleSlam::LSM6DSL::Gyro_Read(gyro_buffer);
+        SimpleSlam::Math::Vector3 gyro(gyro_buffer[0], gyro_buffer[1], gyro_buffer[2]);
+        printf("GYRO %s\n", gyro.to_string().c_str());
+        ThisThread::sleep_for(1s);
+    }
+
     while (true) {
         SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
         SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],
