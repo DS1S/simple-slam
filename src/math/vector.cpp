@@ -8,8 +8,8 @@
 SimpleSlam::Math::Vector3::Vector3(double x, double y, double z)
     : _x{x}, _y{y}, _z{z} {}
 
-SimpleSlam::Math::Vector3::Vector3(const Vector3& other)
-    : _x{other._x}, _y{other._y}, _z{other._z} {}
+// SimpleSlam::Math::Vector3::Vector3(const Vector3& other)
+//     : _x{other._x}, _y{other._y}, _z{other._z} {}
 
 double SimpleSlam::Math::Vector3::dot(const Vector3& other) const {
     return _x * other._x + _y * other._y + _z * other._z;
@@ -37,23 +37,23 @@ double SimpleSlam::Math::Vector3::get_y() const { return _y; }
 
 double SimpleSlam::Math::Vector3::get_z() const { return _z; }
 
-double SimpleSlam::Math::Vector3::operator[](const size_t index) const {
+double SimpleSlam::Math::Vector3::operator[](const size_t& index) const {
     const double arr[3] = {_x, _y, _z};
     return arr[index];
 }
 
 SimpleSlam::Math::Vector3 SimpleSlam::Math::Vector3::operator*(
-    double scalar) const {
+    const double& scalar) const {
     return Vector3(scalar * _x, scalar * _y, scalar * _z);
 }
 
 SimpleSlam::Math::Vector3 SimpleSlam::Math::Vector3::operator+(
-    const Vector3 other) const {
-    return Vector3(other._x * _x, other._y * _y, other._z * _z);
+    const Vector3& other) const {
+    return Vector3(_x + other._x, _y + other._y, _z + other._z);
 }
 
 SimpleSlam::Math::Vector3 SimpleSlam::Math::Vector3::operator/(
-    double scalar) const {
+    const double& scalar) const {
     return Vector3(_x / scalar, _y / scalar, _z / scalar);
 }
 

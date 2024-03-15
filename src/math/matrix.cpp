@@ -7,12 +7,12 @@ SimpleSlam::Math::Matrix3::Matrix3(
     : _matrix{matrix} {}
 
 SimpleSlam::Math::Vector3 SimpleSlam::Math::Matrix3::operator[] (
-    const size_t index) const {
+    const size_t& index) const {
     return _matrix[index];
 }
 
 SimpleSlam::Math::Matrix3 SimpleSlam::Math::Matrix3::operator*(
-    const SimpleSlam::Math::Matrix3 other) const{
+    const SimpleSlam::Math::Matrix3& other) const{
     const double a = _matrix[0][0];
     const double b = _matrix[0][1];
     const double c = _matrix[0][2];
@@ -43,7 +43,7 @@ SimpleSlam::Math::Matrix3 SimpleSlam::Math::Matrix3::operator*(
 }
 
 SimpleSlam::Math::Matrix3 SimpleSlam::Math::Matrix3::operator*(
-    const double scalar) const {
+    const double& scalar) const {
     return SimpleSlam::Math::Matrix3(
         {_matrix[0] * scalar, _matrix[1] * scalar, _matrix[2] * scalar});
 }
@@ -55,7 +55,7 @@ SimpleSlam::Math::Vector3 SimpleSlam::Math::Matrix3::operator*(
 }
 
 SimpleSlam::Math::Matrix3 SimpleSlam::Math::Matrix3::operator+(
-    const SimpleSlam::Math::Matrix3 other) const {
+    const SimpleSlam::Math::Matrix3& other) const {
     const double a = _matrix[0][0];
     const double b = _matrix[0][1];
     const double c = _matrix[0][2];

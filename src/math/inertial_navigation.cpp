@@ -30,8 +30,6 @@ SimpleSlam::Math::InertialNavigationSystem::get_position() const {
 
 void SimpleSlam::Math::InertialNavigationSystem::update_position(
     const Vector3& angular_velocity, const Vector3& force) {
-    // printf("ANG %s\n", angular_velocity.to_string().c_str());
-    // printf("ACC %s\n", force.to_string().c_str());
 
     const Matrix3 identity_matrix(
         {Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1)});
@@ -52,19 +50,15 @@ void SimpleSlam::Math::InertialNavigationSystem::update_position(
         (identity_matrix + (attitude * (std::sin(sigma) / sigma)) +
          (attitude * attitude) * ((1 - std::cos(sigma)) / sigma));
 
-    // printf("%s\n%s\n%s\n",
-    //     rotation_matrix[0].to_string().c_str(),
-    //     rotation_matrix[1].to_string().c_str(),
-    //     rotation_matrix[2].to_string().c_str());
-
     const Vector3 local_force = rotation_matrix * force;
-    const Vector3 gravity(0, 0, -1000);
-    // printf("LOCAL FORCE %s\n", local_force.to_string().c_str());
-
-
+    const Vector3 gravity(0, 0, -1);
     const Vector3 acceleration = local_force + gravity;
+
     _velocity = _velocity + (acceleration * _time_delta);
-    printf("VEL %s\n", (_velocity + (acceleration * _time_delta)).to_string().c_str());
     _position = _position + (_velocity * _time_delta);
-    printf("POS22222222 %s\n", _position.to_string().c_str());
+    printf("ACC: %s VEL: %s POS: %s\n", 
+        acceleration.to_string().c_str(),
+        _velocity.to_string().c_str(),
+        _position.to_string().c_str()
+    );
 }
