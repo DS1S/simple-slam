@@ -105,7 +105,7 @@ std::optional<error_t> Gyro_DeInit();
 /**
  * Read raw accelerometer data into buffer
 */
-std::optional<error_t> Accel_Read_Raw(int16_t* buffer);
+std::optional<error_t> Accel_Read_Raw(uint8_t* buffer);
 /**
  * Read accelerometer data (in mg) into buffer
  * Includes conversion with sensitivity
@@ -115,11 +115,11 @@ std::optional<error_t> Accel_Read(int16_t* buffer);
 /**
  * Read raw gyroscope data into buffer
 */
-std::optional<error_t> Gyro_Read_Raw(int16_t* buffer);
+std::optional<error_t> Gyro_Read_Raw(uint8_t* buffer);
 /**
  * Read gyroscope data (in dps) into buffer
  * Includes conversion with sensitivity
 */
-std::optional<error_t> Gyro_Read(int16_t* buffer);
+std::optional<error_t> Gyro_Read(float* buffer);
 
 }

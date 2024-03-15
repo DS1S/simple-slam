@@ -14,6 +14,7 @@ class Vector3 {
     Vector3 operator*(const double& scalar) const;
     Vector3 operator/(const double& scalar) const;
     Vector3 operator+(const Vector3& other) const;
+    Vector3 operator-(const Vector3& other) const;
     double magnitude() const;
     double get_x() const;
     double get_y() const;

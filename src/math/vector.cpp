@@ -52,6 +52,11 @@ SimpleSlam::Math::Vector3 SimpleSlam::Math::Vector3::operator+(
     return Vector3(_x + other._x, _y + other._y, _z + other._z);
 }
 
+SimpleSlam::Math::Vector3 SimpleSlam::Math::Vector3::operator-(
+    const Vector3& other) const {
+    return Vector3(_x - other._x, _y - other._y, _z - other._z);
+}
+
 SimpleSlam::Math::Vector3 SimpleSlam::Math::Vector3::operator/(
     const double& scalar) const {
     return Vector3(_x / scalar, _y / scalar, _z / scalar);

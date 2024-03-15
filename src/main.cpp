@@ -72,10 +72,9 @@ int main() {
     SimpleSlam::LSM6DSL::Gyro_Init();
     SimpleSlam::LIS3MDL::Init(config);
     SimpleSlam::VL53L0X::Init(tof_config);
-    SimpleSlam::Math::InertialNavigationSystem ins(0.02, SimpleSlam::Math::Vector3(0,0,0), SimpleSlam::Math::Vector3(0,0,0));
 
     int16_t accel_buffer[3];
-    int16_t gyro_buffer[3];
+    float gyro_buffer[3];
     int16_t magno_buffer[3];
     uint16_t tof_distance = 0;
 
@@ -107,6 +106,37 @@ int main() {
     t.start(test_http_client);
     
     while(true){
+    int16_t i = 0;
+    SimpleSlam::Math::Vector3 gyro_offset(0, 0, 0);
+    SimpleSlam::Math::Vector3 accel_offset(0, 0, 0);
+    const int num_samples = 250;
+    printf("Calibrating Gyro + Accel\n");
+    while (i < num_samples) {
+        SimpleSlam::LSM6DSL::Gyro_Read(gyro_buffer);
+        SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
+
+        const SimpleSlam::Math::Vector3 temp_accel(
+            accel_buffer[0], accel_buffer[1], accel_buffer[2]);
+        const SimpleSlam::Math::Vector3 temp_ang(gyro_buffer[0], gyro_buffer[1],
+                                                 gyro_buffer[2]);
+        gyro_offset = gyro_offset + temp_ang;
+        accel_offset = accel_offset + temp_accel;
+        i++;
+        ThisThread::sleep_for(20ms);
+    }
+    gyro_offset = gyro_offset / num_samples;
+    accel_offset = accel_offset / num_samples;
+
+    gyro_offset = gyro_offset / 1000;
+    accel_offset = accel_offset / 1000;
+    printf("Calibrated Gyro Offset: %s\n", gyro_offset.to_string().c_str());
+    printf("Calibrated Accel Offset: %s\n", accel_offset.to_string().c_str());
+
+    SimpleSlam::Math::InertialNavigationSystem ins(
+        1, accel_offset, gyro_offset, SimpleSlam::Math::Vector3(0, 0, 0),
+        SimpleSlam::Math::Vector3(0, 0, 0));
+
+    while (true) {
         // SimpleSlam::Math::Vector3 pos = ins.get_position();
         // printf("POS %s\n", pos.to_string().c_str());
 
@@ -116,13 +146,19 @@ int main() {
         SimpleSlam::Math::Vector3 temp_accel(accel_buffer[0], accel_buffer[1],
                                              accel_buffer[2]);
         SimpleSlam::Math::Vector3 temp_ang(gyro_buffer[0], gyro_buffer[1],
-                                             gyro_buffer[2]);
+                                           gyro_buffer[2]);
 
         SimpleSlam::Math::Vector3 t = temp_accel / 1000;
-        SimpleSlam::Math::Vector3 p = temp_ang * (SimpleSlam::Math::pi/180000);
-        
+        SimpleSlam::Math::Vector3 p =
+            temp_ang * (SimpleSlam::Math::pi / 180000);
+        // SimpleSlam::Math::Vector3 p =
+        //     temp_ang;
+        // printf("UNOFFSETED GYRO: %s || GYRO: %s\n", p.to_string().c_str(), (p
+        // - gyro_offset).to_string().c_str());
+        // printf("%s\n", (p).to_string().c_str());
+        printf("%s %s\n", t.to_string().c_str(), p.to_string().c_str());
         ins.update_position(p, t);
-        ThisThread::sleep_for(20ms);
+        ThisThread::sleep_for(250ms);
     }
 
     while (false) {
