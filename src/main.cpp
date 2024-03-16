@@ -22,7 +22,8 @@ int main() {
     my_data
         .add("age", 1)
         .add("hair", "brown")
-        .add("points", std::vector<std::any>{1, 2, 3, 4});
+        .add_list<float>("points", {3.1, 2, 2.1, 4});
+
     std::string my_data_str = my_data.build();
     printf("My Data: %s \n", my_data_str.c_str());
 

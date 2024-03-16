@@ -8,6 +8,8 @@
 #include <unordered_map>
 
 namespace SimpleSlam {
+
+
 template <class R>
 class DataBuilder {
    private:
@@ -22,7 +24,10 @@ class DataBuilder {
 
     template <class T, class F>
     inline void register_visitor(F const& f) {
-        _visitors.insert(to_visitor<T>(f));
+        auto itr = _visitors.find(std::type_index(typeid(T)));
+        if (itr == _visitors.end()) {
+            _visitors.insert(to_visitor<T>(f));
+        }
     }
 
     inline R build(const std::any& a) {

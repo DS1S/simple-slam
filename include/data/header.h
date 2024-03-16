@@ -9,26 +9,12 @@
 
 namespace SimpleSlam {
 
-namespace {
 typedef SimpleSlam::DataBuilder<std::string> HeaderBuilder;
-
-static HeaderBuilder _builder(
-    {HeaderBuilder::to_visitor<std::unordered_map<std::string, std::string>>(
-        [](std::unordered_map<std::string, std::string> map) -> std::string {
-            std::stringstream ss;
-            ss << "{";
-            for (auto& itr : map) {
-                ss << std::quoted(itr.first) << " : " << std::quoted(itr.second)
-                   << ", ";
-            }
-            ss << "}";
-            return ss.str();
-        })});
-}  // namespace
 
 class Header {
    private:
     std::unordered_map<std::string, std::string> _fields;
+    static HeaderBuilder _builder;
 
    public:
     Header();
@@ -37,4 +23,4 @@ class Header {
     std::string build();
 };
 
-}  // namespace
+}  // namespace SimpleSlam
