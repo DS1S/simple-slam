@@ -61,7 +61,7 @@ void SimpleSlam::Math::InertialNavigationSystem::update_position(
 
     const Vector3 local_force = rotation_matrix * force;
     // const Vector3 gravity(0, 0, -1);
-    const Vector3 acceleration = local_force + _accel_offset;
+    const Vector3 acceleration = local_force - _accel_offset;
 
 
     _velocity = _velocity + (acceleration * _time_delta);

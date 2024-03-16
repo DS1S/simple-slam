@@ -132,10 +132,15 @@ std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Accel_Read_Raw(
 
 std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Accel_Read(int16_t* buffer) {
     uint8_t raw_buffer[6];
+    int16_t pnRawData[3];
     auto maybe_error = Accel_Read_Raw(raw_buffer);
     RETURN_IF_CONTAINS_ERROR(maybe_error);
     for (int i = 0; i < 3; i++) {
-        buffer[i] = ((((uint16_t)raw_buffer[2*i+1]) << 8) + (uint16_t)raw_buffer[2*i]) * ACCEL_SENSITIVITY;
+        pnRawData[i] = ((((uint16_t)raw_buffer[2*i+1]) << 8) + (uint16_t)raw_buffer[2*i]);
+    }
+
+    for (int i = 0; i < 3; i++) {
+        buffer[i] = (int16_t)(pnRawData[i] * ACCEL_SENSITIVITY);
     }
     return {};
 }
@@ -154,11 +159,17 @@ std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Gyro_Read_Raw(u
 
 std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Gyro_Read(float* buffer) {
     uint8_t raw_buffer[6];
+    int16_t pnRawData[3];
     auto maybe_error = Gyro_Read_Raw(raw_buffer);
     RETURN_IF_CONTAINS_ERROR(maybe_error);
 
     for (int i = 0; i < 3; i++) {
-        buffer[i] = (float)((((uint16_t)raw_buffer[2*i+1]) << 8) + (uint16_t)raw_buffer[2*i]) * GYRO_SENSITIVITY;
+        pnRawData[i] = ((((uint16_t)raw_buffer[2*i+1]) << 8) + (uint16_t)raw_buffer[2*i]);
     }
+
+    for (int i = 0; i < 3; i++) {
+        buffer[i] = (float)(pnRawData[i] * GYRO_SENSITIVITY);
+    }
+
     return {};
 }

@@ -133,11 +133,12 @@ int main() {
     printf("Calibrated Accel Offset: %s\n", accel_offset.to_string().c_str());
 
     SimpleSlam::Math::InertialNavigationSystem ins(
-        1, accel_offset, gyro_offset, SimpleSlam::Math::Vector3(0, 0, 0),
+        0.25, accel_offset, gyro_offset, SimpleSlam::Math::Vector3(0, 0, 0),
         SimpleSlam::Math::Vector3(0, 0, 0));
 
+    SimpleSlam::Math::Vector3 p(0,0,0);
     while (true) {
-        // SimpleSlam::Math::Vector3 pos = ins.get_position();
+        SimpleSlam::Math::Vector3 pos = ins.get_position();
         // printf("POS %s\n", pos.to_string().c_str());
 
         SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
@@ -149,16 +150,15 @@ int main() {
                                            gyro_buffer[2]);
 
         SimpleSlam::Math::Vector3 t = temp_accel / 1000;
-        SimpleSlam::Math::Vector3 p =
-            temp_ang * (SimpleSlam::Math::pi / 180000);
+        p = p + (temp_ang / 1000) * 0.1;
         // SimpleSlam::Math::Vector3 p =
         //     temp_ang;
         // printf("UNOFFSETED GYRO: %s || GYRO: %s\n", p.to_string().c_str(), (p
         // - gyro_offset).to_string().c_str());
         // printf("%s\n", (p).to_string().c_str());
-        printf("%s %s\n", t.to_string().c_str(), p.to_string().c_str());
+        printf("%s %s\n", t.to_string().c_str(), temp_ang.to_string().c_str());
         ins.update_position(p, t);
-        ThisThread::sleep_for(250ms);
+        ThisThread::sleep_for(100ms);
     }
 
     while (false) {
