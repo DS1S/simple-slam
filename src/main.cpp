@@ -4,6 +4,9 @@
 #include "driver/lsm6dsl.h"
 #include "driver/vl53l0x.h"
 #include "math/conversion.h"
+#include "data/json.h"
+#include "http_client/http_client.h"
+#include <ISM43362Interface.h>
 #include "mbed.h"
 
 typedef struct {
@@ -14,6 +17,19 @@ typedef struct {
     int16_t minZ;
     int16_t maxZ;
 } offset_vars;
+
+void test_http_client() {
+    char buffer[RESPONSE_SIZE];
+    SimpleSlam::HttpClient::Get_Request("api.restful-api.dev", "/objects/7", buffer);
+    printf("[HttpClient]: GET Response: \n%s\n\n", buffer);
+
+    auto status = SimpleSlam::HttpClient::Post_Request("api.restful-api.dev", "/objects", "{\"name\":\"testobject100\",\"data\":{\"value\":1}}", 43);
+    if (status.has_value()) {
+        printf(status.value().second.c_str());
+    } else {
+        printf("[HttpClient]: POST Succeeded\n");
+    }
+}
 
 int main() {
     printf("Starting Simple-Slam\n");
@@ -41,6 +57,7 @@ int main() {
     SimpleSlam::LSM6DSL::Gyro_Init();
     SimpleSlam::LIS3MDL::Init(config);
     SimpleSlam::VL53L0X::Init(tof_config);
+    SimpleSlam::HttpClient::Http_Client_Init();
 
     int16_t accel_buffer[3];
     int16_t gyro_buffer[3];
@@ -68,6 +85,8 @@ int main() {
     SimpleSlam::Math::magnetometer_calibration_t calibration_data =
         SimpleSlam::Math::Fill_Magnetometer_Calibration_Data(readings);
 
+    Thread t;
+    t.start(test_http_client);
     while (true) {
         SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
         SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],
