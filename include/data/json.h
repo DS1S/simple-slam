@@ -29,6 +29,20 @@ static JSONBuilder _builder(
          ss << std::quoted(s);
          return ss.str();
      }),
+     JSONBuilder::to_visitor<std::vector<std::any>>(
+         [](std::vector<std::any> const& vec) -> std::string {
+            std::stringstream ss;
+            ss << "[";
+            for (auto itr = vec.begin(); itr != vec.end();) {
+                ss << _builder.build(*itr);
+                itr++;
+                if (itr != vec.end()) {
+                    ss << ",";
+                }
+            }
+            ss << "]";
+            return ss.str();
+         }),
      JSONBuilder::to_visitor<std::unordered_map<std::string, std::any>>(
          [](std::unordered_map<std::string, std::any> const& map) {
              std::stringstream ss;
