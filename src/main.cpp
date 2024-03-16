@@ -19,7 +19,10 @@ int main() {
     printf("Starting Simple-Slam\n");
 
     SimpleSlam::JSON my_data;
-    my_data.add("age", 1).add("hair", "brown").add("points", std::vector<std::any>{1, 2, 3, 4});
+    my_data
+        .add("age", 1)
+        .add("hair", "brown")
+        .add("points", std::vector<std::any>{1, 2, 3, 4});
     std::string my_data_str = my_data.build();
     printf("My Data: %s \n", my_data_str.c_str());
 
