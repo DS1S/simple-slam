@@ -3,6 +3,7 @@
 #include "driver/lsm6dsl.h"
 #include "driver/vl53l0x.h"
 #include "math/conversion.h"
+#include "data/json.h"
 #include "mbed.h"
 
 typedef struct {
@@ -16,6 +17,11 @@ typedef struct {
 
 int main() {
     printf("Starting Simple-Slam\n");
+
+    SimpleSlam::JSON my_data;
+    my_data.add("age", 1).add("hair", "brown");
+    std::string my_data_str = my_data.build();
+    printf("My Data: %s \n", my_data_str.c_str());
 
     SimpleSlam::LIS3MDL::LIS3MDL_Config_t config{
         .output_rate = LOPTS_OUTPUT_RATE_80_HZ,  // 80 Hz
@@ -45,7 +51,7 @@ int main() {
         ThisThread::sleep_for(1s);
     }
 
-    while (true) {
+    while (false) {
         SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
         SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],
                                      magno_buffer[2]);
