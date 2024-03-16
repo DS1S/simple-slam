@@ -24,3 +24,4 @@ class Header {
 };
 
 }  // namespace SimpleSlam
+
