@@ -23,7 +23,7 @@ std::optional<HttpClient::error_t> HttpClient::Http_Client_Init() {
     return {};
 }
 
-std::optional<HttpClient::error_t> HttpClient::Post_Request(const char* host, const char* endpoint, const char* body, int size) {
+std::optional<HttpClient::error_t> HttpClient::Post(std::string host, std::string endpoint, std::string body, int size) {
     string request;
     request.append("POST ").append(endpoint).append(" HTTP/1.1\r\n")
         .append("Host: ").append(host).append("\r\n")
@@ -31,7 +31,7 @@ std::optional<HttpClient::error_t> HttpClient::Post_Request(const char* host, co
         .append("Content-Length: ").append(std::to_string(size)).append("\r\n\r\n")
         .append(body);
 
-    wifi.NetworkStack::gethostbyname(host, &addr);
+    wifi.NetworkStack::gethostbyname(host.c_str(), &addr);
     addr.set_port(80);
     socket.open(&wifi);
     socket.connect(addr);
@@ -49,12 +49,12 @@ std::optional<HttpClient::error_t> HttpClient::Post_Request(const char* host, co
     return {};
 }
 
-std::optional<HttpClient::error_t> HttpClient::Get_Request(const char* host, const char* endpoint, char* buffer) {
+std::optional<HttpClient::error_t> HttpClient::Get(std::string host, std::string endpoint, char* buffer) {
     string request;
     request.append("GET ").append(endpoint).append(" HTTP/1.1\r\n")
         .append("Host: ").append(host).append("\r\n\r\n");
 
-    wifi.NetworkStack::gethostbyname(host, &addr);
+    wifi.NetworkStack::gethostbyname(host.c_str(), &addr);
     addr.set_port(80);
     socket.open(&wifi);
     socket.connect(addr);

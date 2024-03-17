@@ -14,8 +14,8 @@ typedef std::pair<ErrorCode, std::string> error_t;
 
 std::optional<error_t> Http_Client_Init();
 
-std::optional<error_t> Post_Request(const char* host, const char* endpoint, const char* body, int size);
+std::optional<error_t> Post(std::string host, std::string endpoint, std::string body, int size);
 
-std::optional<error_t> Get_Request(const char* host, const char* endpoint, char* buffer);
+std::optional<error_t> Get(std::string host, std::string endpoint, char* buffer);
 
 }

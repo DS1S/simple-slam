@@ -20,10 +20,10 @@ typedef struct {
 
 void test_http_client() {
     char buffer[RESPONSE_SIZE];
-    SimpleSlam::HttpClient::Get_Request("api.restful-api.dev", "/objects/7", buffer);
+    SimpleSlam::HttpClient::Get("api.restful-api.dev", "/objects/7", buffer);
     printf("[HttpClient]: GET Response: \n%s\n\n", buffer);
 
-    auto status = SimpleSlam::HttpClient::Post_Request("api.restful-api.dev", "/objects", "{\"name\":\"testobject100\",\"data\":{\"value\":1}}", 43);
+    auto status = SimpleSlam::HttpClient::Post("api.restful-api.dev", "/objects", "{\"name\":\"testobject100\",\"data\":{\"value\":1}}", 43);
     if (status.has_value()) {
         printf(status.value().second.c_str());
     } else {
