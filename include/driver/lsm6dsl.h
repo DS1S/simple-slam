@@ -48,6 +48,7 @@ typedef std::pair<ErrorCode, std::string> error_t;
 #define CTRL_1_REG 0x10
 #define CTRL_2_REG 0x11
 #define CTRL_3_REG 0x12
+#define CTRL_4_REG 0x13
 #define CTRL_6_REG 0x15
 #define CTRL_7_REG 0x16
 #define CTRL_8_REG 0x17
@@ -66,16 +67,19 @@ typedef std::pair<ErrorCode, std::string> error_t;
 
 // Control Options for CTRL2-G Register - LSM6DSL data sheet pg. 61
 #define GYRO_ODR_LOW_POWER 0x00
-#define GYRO_ODR_6660HZ 0x60
+#define GYRO_ODR_6660HZ 0x50
 #define GYRO_FS_G 0x00
 #define GYRO_FS_125 0x00
 #define GYRO_SENSITIVITY 8.75f
+
+// Control Optiosn for CTRL-4-C Register - LSM6DSL data sheet pg. 63
+#define GYRO_LPF1_SEL 0x02
 
 // Control Options for CTRL6-G Register - LSM6DSL data sheet pg. 65
 #define GYRO_LOW_PASS_BANDWIDTH 0x03
 
 // Control Options for CTRL7-G Registers - LSM6DSL data sheet pg. 66
-#define GYRO_HIGH_PASS_EN 0x40
+#define GYRO_HIGH_PASS_EN 0x00
 #define GYRO_HIGH_PASS_BANDWIDTH 0x30
 
 

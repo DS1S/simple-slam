@@ -50,6 +50,15 @@ std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Gyro_Init() {
         ctrl_2
     );
     RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, "Failed to write to Ctrl 2");
+    
+    // CTRL4 Gyroscope Options: LPF1
+    // uint8_t ctrl_4 = GYRO_LPF1_SEL;
+    // status = I2C_Mem_Write_Single(
+    //     I2C_ADDRESS,
+    //     CTRL_4_REG,
+    //     ctrl_4
+    // );
+    // RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, "Failed to write to Ctrl 4");
 
     // CTRL6 Gyroscope Options: low-pass filter
     uint8_t ctrl_6 = GYRO_LOW_PASS_BANDWIDTH;

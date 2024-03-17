@@ -127,13 +127,13 @@ int main() {
     gyro_offset = gyro_offset / num_samples;
     accel_offset = accel_offset / num_samples;
 
-    gyro_offset = gyro_offset / 1000;
+    gyro_offset = gyro_offset * SimpleSlam::Math::pi / 180000;
     accel_offset = accel_offset / 1000;
     printf("Calibrated Gyro Offset: %s\n", gyro_offset.to_string().c_str());
     printf("Calibrated Accel Offset: %s\n", accel_offset.to_string().c_str());
 
     SimpleSlam::Math::InertialNavigationSystem ins(
-        0.25, accel_offset, gyro_offset, SimpleSlam::Math::Vector3(0, 0, 0),
+        0.02, accel_offset, gyro_offset, SimpleSlam::Math::Vector3(0, 0, 0),
         SimpleSlam::Math::Vector3(0, 0, 0));
 
     SimpleSlam::Math::Vector3 p(0,0,0);
@@ -150,15 +150,18 @@ int main() {
                                            gyro_buffer[2]);
 
         SimpleSlam::Math::Vector3 t = temp_accel / 1000;
-        p = p + (temp_ang / 1000) * 0.1;
-        // SimpleSlam::Math::Vector3 p =
-        //     temp_ang;
-        // printf("UNOFFSETED GYRO: %s || GYRO: %s\n", p.to_string().c_str(), (p
-        // - gyro_offset).to_string().c_str());
-        // printf("%s\n", (p).to_string().c_str());
-        printf("%s %s\n", t.to_string().c_str(), temp_ang.to_string().c_str());
+        // p = p + ((temp_ang * 1 / 1000) * 0.02);
+        // p = p + ((temp_ang *  1 / 1000) * 0.02);
+        // p = p + SimpleSlam::Math::Vector3(
+        //     (std::atan2(t.get_x(), t.get_y())),
+        //     (std::atan2(t.get_x(), t.get_y())),
+        //     (std::atan2(t.get_x(), t.get_y()))
+        // ) * 0.1;
+        p = (temp_ang * SimpleSlam::Math::pi / 180000);
+        
+        // printf("%s %s %s\n", t.to_string().c_str(), p.to_string().c_str(), ((temp_ang * 1 / 1000) * 0.02).to_string().c_str());
         ins.update_position(p, t);
-        ThisThread::sleep_for(100ms);
+        ThisThread::sleep_for(20ms);
     }
 
     while (false) {

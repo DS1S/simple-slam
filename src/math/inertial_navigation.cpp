@@ -53,20 +53,26 @@ void SimpleSlam::Math::InertialNavigationSystem::update_position(
         _rotation_matrix *
         (identity_matrix + (attitude * (std::sin(sigma) / sigma)) +
          (attitude * attitude) * ((1 - std::cos(sigma)) / std::pow(sigma, 2)));
-    // printf("ANG: %s\n%s\n%s\n%s\n\n",
-    //     angular_velocity.to_string().c_str(),
-    //     rotation_matrix[0].to_string().c_str(),
-    //     rotation_matrix[1].to_string().c_str(),
-    //     rotation_matrix[2].to_string().c_str());
+    // const Matrix3 rotation_matrix = _rotation_matrix * (identity_matrix + attitude);
+    printf("ANG: %s\n%s\n%s\n%s\n",
+        angular_velocity.to_string().c_str(),
+        attitude[0].to_string().c_str(),
+        attitude[1].to_string().c_str(),
+        attitude[2].to_string().c_str());
 
     const Vector3 local_force = rotation_matrix * force;
-    // const Vector3 gravity(0, 0, -1);
-    const Vector3 acceleration = local_force - _accel_offset;
+    const Vector3 gravity(0, 0, -1);
+    const Vector3 acceleration = local_force + gravity;
+    // printf("FORCE: %s LOCAL: %s ACC: %s\n\n", 
+    //     force.to_string().c_str(),
+    //     local_force.to_string().c_str(),
+    //     acceleration.to_string().c_str());
+    // const Vector3 acceleration = local_force - _accel_offset;
 
 
-    _velocity = _velocity + (acceleration * _time_delta);
+    _velocity = _velocity + ((acceleration * _time_delta) * 9.8);
     _position = _position + (_velocity * _time_delta);
-    _rotation_matrix = rotation_matrix;
+    // _rotation_matrix = rotation_matrix;
     // printf("ACC: %s VEL: %s POS: %s\n", acceleration.to_string().c_str(),
     //        _velocity.to_string().c_str(), _position.to_string().c_str());
 }
