@@ -6,9 +6,9 @@ namespace SimpleSlam {
 
 class HttpClient {
     private:
-        TCPSocket socket;
-        std::unique_ptr<WiFiInterface> wifi;
-        SocketAddress addr;
+        TCPSocket _socket;
+        std::unique_ptr<WiFiInterface> _wifi;
+        SocketAddress _addr;
 
     public:
         // Error handling
@@ -36,15 +36,15 @@ class HttpClient {
 
         HttpClient(WiFiInterface* wifi);
 
-        std::optional<error_t> Init();
+        std::optional<error_t> init();
 
-        std::optional<error_t> DeInit();
+        std::optional<error_t> deinit();
 
-        std::optional<error_t> Post(std::string host, std::string endpoint, std::string body, int size);
+        std::optional<error_t> post(std::string host, std::string endpoint, std::string body, int size);
 
-        std::optional<error_t> Get(std::string host, std::string endpoint);
+        std::optional<error_t> get(std::string host, std::string endpoint);
 
-        std::optional<error_t> Delete(std::string host, std::string endpoint);
+        std::optional<error_t> delete_request(std::string host, std::string endpoint);
 };
 
 }

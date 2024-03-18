@@ -21,21 +21,21 @@ typedef struct {
 void test_http_client() {
     ISM43362Interface wifi;
     SimpleSlam::HttpClient http_client(&wifi);
-    http_client.Init();
-    auto status = http_client.Get("api.restful-api.dev", "/objects/7");
+    http_client.init();
+    auto status = http_client.get("api.restful-api.dev", "/objects/7");
     if (status.has_value()) {
         printf(status.value().second.c_str());
     } else {
         printf("[HttpClient]: GET Succeeded\n");
     }
 
-    status = http_client.Post("api.restful-api.dev", "/objects", "{\"name\":\"testobject100\",\"data\":{\"value\":1}}", 43);
+    status = http_client.post("api.restful-api.dev", "/objects", "{\"name\":\"testobject100\",\"data\":{\"value\":1}}", 43);
     if (status.has_value()) {
         printf(status.value().second.c_str());
     } else {
         printf("[HttpClient]: POST Succeeded\n");
     }
-    http_client.DeInit();
+    http_client.deinit();
 }
 
 int main() {
