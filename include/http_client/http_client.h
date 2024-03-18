@@ -27,6 +27,8 @@ class HttpClient {
         std::optional<error_t> Post(std::string host, std::string endpoint, std::string body, int size);
 
         std::optional<error_t> Get(std::string host, std::string endpoint, char* buffer);
+
+        std::optional<error_t> Delete(std::string host, std::string endpoint);
 };
 
 }

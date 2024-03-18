@@ -68,3 +68,26 @@ std::optional<HttpClient::error_t> HttpClient::Get(std::string host, std::string
     socket.close();
     return {};
 }
+
+std::optional<HttpClient::error_t> HttpClient::Delete(std::string host, std::string endpoint) {
+    string request;
+    request.append("DELETE ").append(endpoint).append(" HTTP/1.1\r\n")
+        .append("Host: ").append(host).append("\r\n\r\n");
+
+    ((NetworkStack *) wifi)->gethostbyname(host.c_str(), &addr);
+    addr.set_port(80);
+    socket.open(wifi);
+    socket.connect(addr);
+    socket.send(request.c_str(), request.length());
+
+    char buffer[16];
+    socket.recv(buffer, 16);
+    if (strncmp(buffer, "HTTP/1.1 200 OK", 15) != 0) {
+        printf("DELETE Response: %s\n", buffer);
+        return std::make_optional(std::make_pair(
+            ErrorCode::POST_NOT_OK,
+            "DELETE Failed\n"));
+    }
+    socket.close();
+    return {};
+}
