@@ -1,5 +1,5 @@
 #include "mbed.h"
-#include "ISM43362Interface.h"
+#include "WiFiInterface.h"
 
 #define RESPONSE_SIZE 1024
 namespace SimpleSlam {
@@ -7,7 +7,7 @@ namespace SimpleSlam {
 class HttpClient {
     private:
         TCPSocket socket;
-        ISM43362Interface *wifi;
+        WiFiInterface *wifi;
         SocketAddress addr;
 
     public:
@@ -34,7 +34,7 @@ class HttpClient {
 
         typedef std::pair<ErrorCode, std::string> error_t;
 
-        HttpClient(ISM43362Interface* wifi);
+        HttpClient(WiFiInterface* wifi);
 
         std::optional<error_t> Init();
 

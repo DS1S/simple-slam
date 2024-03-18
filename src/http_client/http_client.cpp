@@ -1,14 +1,14 @@
 #include <utility>
 #include <string>
 #include <optional>
-#include "ISM43362Interface.h"
+#include "WiFiInterface.h"
 #include "mbed.h"
 #include "http_client/http_client.h"
 #include "http_client/wifi_config.h"
 
 using namespace SimpleSlam;
 
-SimpleSlam::HttpClient::HttpClient(ISM43362Interface* wifi) : wifi(wifi) {}
+SimpleSlam::HttpClient::HttpClient(WiFiInterface* wifi) : wifi(wifi) {}
 
 std::optional<HttpClient::error_t> HttpClient::Init() {
     printf("[HttpClient]: Http Client Init\n");
@@ -29,7 +29,7 @@ std::optional<HttpClient::error_t> HttpClient::Post(std::string host, std::strin
         .append("Content-Length: ").append(std::to_string(size)).append("\r\n\r\n")
         .append(body);
 
-    ((NetworkStack *) wifi)->gethostbyname(host.c_str(), &addr);
+    wifi->gethostbyname(host.c_str(), &addr);
     addr.set_port(80);
     socket.open(wifi);
     socket.connect(addr);
@@ -52,7 +52,7 @@ std::optional<HttpClient::error_t> HttpClient::Get(std::string host, std::string
     request.append("GET ").append(endpoint).append(" HTTP/1.1\r\n")
         .append("Host: ").append(host).append("\r\n\r\n");
 
-    ((NetworkStack *) wifi)->gethostbyname(host.c_str(), &addr);
+    wifi->gethostbyname(host.c_str(), &addr);
     addr.set_port(80);
     socket.open(wifi);
     socket.connect(addr);
@@ -75,7 +75,7 @@ std::optional<HttpClient::error_t> HttpClient::Delete(std::string host, std::str
     request.append("DELETE ").append(endpoint).append(" HTTP/1.1\r\n")
         .append("Host: ").append(host).append("\r\n\r\n");
 
-    ((NetworkStack *) wifi)->gethostbyname(host.c_str(), &addr);
+    wifi->gethostbyname(host.c_str(), &addr);
     addr.set_port(80);
     socket.open(wifi);
     socket.connect(addr);
