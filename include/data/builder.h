@@ -9,7 +9,6 @@
 
 namespace SimpleSlam {
 
-
 template <class R>
 class DataBuilder {
    private:

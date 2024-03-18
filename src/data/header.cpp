@@ -31,13 +31,13 @@ SimpleSlam::Header& SimpleSlam::Header::request_type(
     HTTPRequestType request_type) {
     switch (request_type) {
         case HTTPRequestType::GET:
-            _fields.insert({"Request Type", "GET /HTTP/1.1"});
+            _fields.insert({"Request Type", "GET HTTP/1.1"});
             break;
         case HTTPRequestType::POST:
-            _fields.insert({"Request Type", "POST /HTTP/1.1"});
+            _fields.insert({"Request Type", "POST HTTP/1.1"});
             break;
         case HTTPRequestType::DELETE:
-            _fields.insert({"Request Type", "DELETE /HTTP/1.1"});
+            _fields.insert({"Request Type", "DELETE HTTP/1.1"});
             break;
     }
 }
