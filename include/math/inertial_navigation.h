@@ -4,6 +4,7 @@
 
 #include "math/vector.h"
 #include "math/matrix.h"
+#include "math/quaternion.h"
 
 
 namespace SimpleSlam::Math {
@@ -24,6 +25,7 @@ namespace SimpleSlam::Math {
 
         private:
             const double _time_delta;
+            Quaternion _q;
             Vector3 _accel_offset;
             Vector3 _gyro_offset;
             Vector3 _velocity;

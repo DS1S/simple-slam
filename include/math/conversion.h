@@ -6,7 +6,7 @@
 
 namespace SimpleSlam::Math {
 
-inline constexpr double pi = 3.145926535;
+inline constexpr double pi = 3.141592653589793238462643383279;
 
 typedef struct magnetometer_calibration {
     double offset_x;

@@ -51,6 +51,15 @@ std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Gyro_Init() {
     );
     RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, "Failed to write to Ctrl 2");
     
+    // CTRL3 Gyroscope Options: LPF1
+    uint8_t ctrl_3 = GYRO_BDU | GYRO_IF_INC;
+    status = I2C_Mem_Write_Single(
+        I2C_ADDRESS,
+        CTRL_3_REG,
+        ctrl_3
+    );
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, "Failed to write to Ctrl 3");
+
     // CTRL4 Gyroscope Options: LPF1
     // uint8_t ctrl_4 = GYRO_LPF1_SEL;
     // status = I2C_Mem_Write_Single(

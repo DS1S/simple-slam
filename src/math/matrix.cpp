@@ -6,6 +6,23 @@ SimpleSlam::Math::Matrix3::Matrix3(
     const std::array<SimpleSlam::Math::Vector3, 3> matrix)
     : _matrix{matrix} {}
 
+SimpleSlam::Math::Matrix3 SimpleSlam::Math::Matrix3::transpose() const {
+    const double a = _matrix[0][0];
+    const double b = _matrix[0][1];
+    const double c = _matrix[0][2];
+    const double d = _matrix[1][0];
+    const double e = _matrix[1][1];
+    const double f = _matrix[1][2];
+    const double g = _matrix[2][0];
+    const double h = _matrix[2][1];
+    const double i = _matrix[2][2];
+
+    return SimpleSlam::Math::Matrix3(
+        {Vector3(a, d, g),
+         Vector3(b, e, h),
+         Vector3(c, f, i)});
+}
+
 SimpleSlam::Math::Vector3 SimpleSlam::Math::Matrix3::operator[] (
     const size_t& index) const {
     return _matrix[index];
