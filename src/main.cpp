@@ -22,11 +22,15 @@ void test_http_client() {
     ISM43362Interface wifi;
     SimpleSlam::HttpClient http_client(&wifi);
     char buffer[RESPONSE_SIZE];
-    http_client.Http_Client_Init();
-    http_client.Get("api.restful-api.dev", "/objects/7", buffer);
-    printf("[HttpClient]: GET Response: \n%s\n\n", buffer);
+    http_client.Init();
+    auto status = http_client.Get("api.restful-api.dev", "/objects/7");
+    if (status.has_value()) {
+        printf(status.value().second.c_str());
+    } else {
+        printf("[HttpClient]: GET Succeeded\n");
+    }
 
-    auto status = http_client.Post("api.restful-api.dev", "/objects", "{\"name\":\"testobject100\",\"data\":{\"value\":1}}", 43);
+    status = http_client.Post("api.restful-api.dev", "/objects", "{\"name\":\"testobject100\",\"data\":{\"value\":1}}", 43);
     if (status.has_value()) {
         printf(status.value().second.c_str());
     } else {
