@@ -8,13 +8,11 @@
 
 using namespace SimpleSlam;
 
-TCPSocket socket;
-ISM43362Interface wifi;
-SocketAddress addr;
+SimpleSlam::HttpClient::HttpClient(ISM43362Interface* wifi) : wifi(wifi) {}
 
 std::optional<HttpClient::error_t> HttpClient::Http_Client_Init() {
     printf("[HttpClient]: Http Client Init\n");
-    nsapi_error_t error = wifi.connect(WIFI_SSID, WIFI_PASS, NSAPI_SECURITY_WPA2);
+    nsapi_error_t error = wifi->connect(WIFI_SSID, WIFI_PASS, NSAPI_SECURITY_WPA2);
     if (error != 0) {
         return std::make_optional(std::make_pair(    \
             ErrorCode::WIFI_CONNECT_ERROR,           \
@@ -31,9 +29,9 @@ std::optional<HttpClient::error_t> HttpClient::Post(std::string host, std::strin
         .append("Content-Length: ").append(std::to_string(size)).append("\r\n\r\n")
         .append(body);
 
-    wifi.NetworkStack::gethostbyname(host.c_str(), &addr);
+    ((NetworkStack *) wifi)->gethostbyname(host.c_str(), &addr);
     addr.set_port(80);
-    socket.open(&wifi);
+    socket.open(wifi);
     socket.connect(addr);
     socket.send(request.c_str(), request.length());
 
@@ -54,12 +52,13 @@ std::optional<HttpClient::error_t> HttpClient::Get(std::string host, std::string
     request.append("GET ").append(endpoint).append(" HTTP/1.1\r\n")
         .append("Host: ").append(host).append("\r\n\r\n");
 
-    wifi.NetworkStack::gethostbyname(host.c_str(), &addr);
+    ((NetworkStack *) wifi)->gethostbyname(host.c_str(), &addr);
     addr.set_port(80);
-    socket.open(&wifi);
+    socket.open(wifi);
     socket.connect(addr);
     socket.send(request.c_str(), request.length());
 
+    memset(buffer, 0, RESPONSE_SIZE);
     socket.recv(buffer, RESPONSE_SIZE);
     if (strncmp(buffer, "HTTP/1.1 200 OK", 15)) {
         return std::make_optional(std::make_pair(

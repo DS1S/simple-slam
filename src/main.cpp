@@ -19,11 +19,14 @@ typedef struct {
 } offset_vars;
 
 void test_http_client() {
+    ISM43362Interface wifi;
+    SimpleSlam::HttpClient http_client(&wifi);
     char buffer[RESPONSE_SIZE];
-    SimpleSlam::HttpClient::Get("api.restful-api.dev", "/objects/7", buffer);
+    http_client.Http_Client_Init();
+    http_client.Get("api.restful-api.dev", "/objects/7", buffer);
     printf("[HttpClient]: GET Response: \n%s\n\n", buffer);
 
-    auto status = SimpleSlam::HttpClient::Post("api.restful-api.dev", "/objects", "{\"name\":\"testobject100\",\"data\":{\"value\":1}}", 43);
+    auto status = http_client.Post("api.restful-api.dev", "/objects", "{\"name\":\"testobject100\",\"data\":{\"value\":1}}", 43);
     if (status.has_value()) {
         printf(status.value().second.c_str());
     } else {
@@ -57,7 +60,6 @@ int main() {
     SimpleSlam::LSM6DSL::Gyro_Init();
     SimpleSlam::LIS3MDL::Init(config);
     SimpleSlam::VL53L0X::Init(tof_config);
-    SimpleSlam::HttpClient::Http_Client_Init();
 
     int16_t accel_buffer[3];
     int16_t gyro_buffer[3];
