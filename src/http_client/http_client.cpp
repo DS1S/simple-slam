@@ -21,6 +21,11 @@ std::optional<HttpClient::error_t> HttpClient::Init() {
     return {};
 }
 
+std::optional<HttpClient::error_t> HttpClient::DeInit() {
+    wifi.release();
+    return {};
+}
+
 std::optional<HttpClient::error_t> HttpClient::Post(std::string host, std::string endpoint, std::string body, int size) {
     string request;
     request.append("POST ").append(endpoint).append(" HTTP/1.1\r\n")
@@ -31,7 +36,7 @@ std::optional<HttpClient::error_t> HttpClient::Post(std::string host, std::strin
 
     wifi->gethostbyname(host.c_str(), &addr);
     addr.set_port(80);
-    socket.open(wifi);
+    socket.open(wifi.get());
     socket.connect(addr);
     socket.send(request.c_str(), request.length());
 
@@ -54,7 +59,7 @@ std::optional<HttpClient::error_t> HttpClient::Get(std::string host, std::string
 
     wifi->gethostbyname(host.c_str(), &addr);
     addr.set_port(80);
-    socket.open(wifi);
+    socket.open(wifi.get());
     socket.connect(addr);
     socket.send(request.c_str(), request.length());
 
@@ -77,7 +82,7 @@ std::optional<HttpClient::error_t> HttpClient::Delete(std::string host, std::str
 
     wifi->gethostbyname(host.c_str(), &addr);
     addr.set_port(80);
-    socket.open(wifi);
+    socket.open(wifi.get());
     socket.connect(addr);
     socket.send(request.c_str(), request.length());
 

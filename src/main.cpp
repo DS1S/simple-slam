@@ -21,7 +21,6 @@ typedef struct {
 void test_http_client() {
     ISM43362Interface wifi;
     SimpleSlam::HttpClient http_client(&wifi);
-    char buffer[RESPONSE_SIZE];
     http_client.Init();
     auto status = http_client.Get("api.restful-api.dev", "/objects/7");
     if (status.has_value()) {
@@ -36,6 +35,7 @@ void test_http_client() {
     } else {
         printf("[HttpClient]: POST Succeeded\n");
     }
+    http_client.DeInit();
 }
 
 int main() {
