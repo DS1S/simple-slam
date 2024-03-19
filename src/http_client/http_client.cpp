@@ -5,6 +5,7 @@
 #include "mbed.h"
 #include "http_client/http_client.h"
 #include "http_client/wifi_config.h"
+#include "data/header.h"
 
 using namespace SimpleSlam;
 
@@ -26,12 +27,19 @@ std::optional<HttpClient::error_t> HttpClient::deinit() {
     return {};
 }
 
-std::optional<HttpClient::error_t> HttpClient::post(std::string host, std::string endpoint, std::string body, int size) {
+std::optional<HttpClient::error_t> HttpClient::post(std::string host, std::string endpoint, std::string body) {
+    SimpleSlam::Header header;
     string request;
-    request.append("POST ").append(endpoint).append(" HTTP/1.1\r\n")
-        .append("Host: ").append(host).append("\r\n")
-        .append("Content-Type: ").append("application/json").append("\r\n")
-        .append("Content-Length: ").append(std::to_string(size)).append("\r\n\r\n")
+    header
+        .request_type(SimpleSlam::HTTPRequestType::POST, endpoint)
+        .add("Host", host)
+        .add("Content-Type", "application/json")
+        .add("Content-Length", std::to_string(body.length()));
+
+    std::string header_str = header.build();
+    request
+        .append(header_str)
+        .append("\r\n")
         .append(body);
 
     _wifi->gethostbyname(host.c_str(), &_addr);
@@ -53,9 +61,16 @@ std::optional<HttpClient::error_t> HttpClient::post(std::string host, std::strin
 }
 
 std::optional<HttpClient::error_t> HttpClient::get(std::string host, std::string endpoint) {
+    SimpleSlam::Header header;
     string request;
-    request.append("GET ").append(endpoint).append(" HTTP/1.1\r\n")
-        .append("Host: ").append(host).append("\r\n\r\n");
+    header
+        .request_type(SimpleSlam::HTTPRequestType::GET, endpoint);
+        .add("Host", host);
+
+    std::string header_str = header.build();
+    request
+        .append(header_str)
+        .append("\r\n");
 
     _wifi->gethostbyname(host.c_str(), &_addr);
     _addr.set_port(80);
@@ -76,9 +91,16 @@ std::optional<HttpClient::error_t> HttpClient::get(std::string host, std::string
 }
 
 std::optional<HttpClient::error_t> HttpClient::delete_request(std::string host, std::string endpoint) {
+    SimpleSlam::Header header;
     string request;
-    request.append("DELETE ").append(endpoint).append(" HTTP/1.1\r\n")
-        .append("Host: ").append(host).append("\r\n\r\n");
+    header
+        .request_type(SimpleSlam::HTTPRequestType::DELETE, endpoint);
+        .add("Host", host);
+
+    std::string header_str = header.build();
+    request
+        .append(header_str)
+        .append("\r\n");
 
     _wifi->gethostbyname(host.c_str(), &_addr);
     _addr.set_port(80);

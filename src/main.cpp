@@ -8,6 +8,7 @@
 #include "http_client/http_client.h"
 #include <ISM43362Interface.h>
 #include "mbed.h"
+#include "data/header.h"
 
 typedef struct {
     int16_t minX;
@@ -29,7 +30,7 @@ void test_http_client() {
         printf("[HttpClient]: GET Succeeded\n");
     }
 
-    status = http_client.post("api.restful-api.dev", "/objects", "{\"name\":\"testobject100\",\"data\":{\"value\":1}}", 43);
+    status = http_client.post("api.restful-api.dev", "/objects", "{\"name\":\"testobject100\",\"data\":{\"value\":1}}");
     if (status.has_value()) {
         printf(status.value().second.c_str());
     } else {

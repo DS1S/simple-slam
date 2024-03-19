@@ -40,7 +40,7 @@ class HttpClient {
 
         std::optional<error_t> deinit();
 
-        std::optional<error_t> post(std::string host, std::string endpoint, std::string body, int size);
+        std::optional<error_t> post(std::string host, std::string endpoint, std::string body);
 
         std::optional<error_t> get(std::string host, std::string endpoint);
 
