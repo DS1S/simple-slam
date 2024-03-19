@@ -11,6 +11,20 @@ using namespace SimpleSlam;
 
 SimpleSlam::HttpClient::HttpClient(WiFiInterface* wifi) : _wifi(wifi) {}
 
+std::string HttpClient::ErrorMessage(ErrorCode error) {
+    switch (error) {
+        case ErrorCode::WIFI_CONNECT_ERROR:
+            return "Failed to Connect to Wifi\n";
+        case ErrorCode::POST_NOT_OK:
+            return "POST Failed\n";
+        case ErrorCode::GET_NOT_OK:
+            return "GET Failed\n";
+        case ErrorCode::DELETE_NOT_OK:
+            return "DELETE Failed\n";
+    }
+    return "Failed";
+}
+
 std::optional<HttpClient::error_t> HttpClient::init() {
     printf("[HttpClient]: Http Client Init\n");
     nsapi_error_t error = _wifi->connect(WIFI_SSID, WIFI_PASS, NSAPI_SECURITY_WPA2);

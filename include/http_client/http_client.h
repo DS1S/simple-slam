@@ -5,33 +5,21 @@
 namespace SimpleSlam {
 
 class HttpClient {
-    private:
-        TCPSocket _socket;
-        std::unique_ptr<WiFiInterface> _wifi;
-        SocketAddress _addr;
-
     public:
-        // Error handling
         enum class ErrorCode {
             WIFI_CONNECT_ERROR = 1,
             POST_NOT_OK = 2,
             GET_NOT_OK = 3,
             DELETE_NOT_OK = 4,
         };
-        std::string ErrorMessage(ErrorCode error) {
-            switch (error) {
-                case ErrorCode::WIFI_CONNECT_ERROR:
-                    return "Failed to Connect to Wifi\n";
-                case ErrorCode::POST_NOT_OK:
-                    return "POST Failed\n";
-                case ErrorCode::GET_NOT_OK:
-                    return "GET Failed\n";
-                case ErrorCode::DELETE_NOT_OK:
-                    return "DELETE Failed\n";
-            }
-            return "Failed";
-        }
 
+    private:
+        TCPSocket _socket;
+        std::unique_ptr<WiFiInterface> _wifi;
+        SocketAddress _addr;
+        std::string ErrorMessage(ErrorCode error);
+
+    public:
         typedef std::pair<ErrorCode, std::string> error_t;
 
         HttpClient(WiFiInterface* wifi);
