@@ -26,7 +26,7 @@ class Header {
     Header();
     Header(std::unordered_map<std::string, std::string> const&& fields);
     Header& add(std::string field, std::string value);
-    Header& request_type(HTTPRequestType request_type);
+    Header& request_type(HTTPRequestType request_type, std::string endpoint);
     std::string build();
 };
 

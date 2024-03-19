@@ -7,10 +7,12 @@ SimpleSlam::HeaderBuilder SimpleSlam::Header::_builder(
             for (auto& itr : map) {
                 if (itr.first != "Request Type") {
                     ss << itr.first << ": " << itr.second;
+                    ss << "\r\n";
                 } else {
-                    ss << itr.second;
+                    std::string temp = ss.str();
+                    ss.seekp(0);
+                    ss << itr.second << "\r\n" << temp;
                 }
-                ss << "\r\n";
             }
             return ss.str();
         })});
@@ -28,18 +30,19 @@ SimpleSlam::Header& SimpleSlam::Header::add(std::string field,
 }
 
 SimpleSlam::Header& SimpleSlam::Header::request_type(
-    HTTPRequestType request_type) {
+    HTTPRequestType request_type, std::string endpoint) {
     switch (request_type) {
         case HTTPRequestType::GET:
-            _fields.insert({"Request Type", "GET HTTP/1.1"});
+            _fields.insert({"Request Type", "GET " + endpoint + " HTTP/1.1"});
             break;
         case HTTPRequestType::POST:
-            _fields.insert({"Request Type", "POST HTTP/1.1"});
+            _fields.insert({"Request Type", "POST " + endpoint + " HTTP/1.1"});
             break;
         case HTTPRequestType::DELETE:
-            _fields.insert({"Request Type", "DELETE HTTP/1.1"});
+            _fields.insert({"Request Type", "DELETE " + endpoint + " HTTP/1.1"});
             break;
     }
+    return *this;
 }
 
 std::string SimpleSlam::Header::build() { return _builder.build(_fields); }
