@@ -21,6 +21,7 @@ class Header {
    private:
     std::unordered_map<std::string, std::string> _fields;
     static HeaderBuilder _builder;
+    std::string _request;
 
    public:
     Header();
