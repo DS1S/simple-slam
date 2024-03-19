@@ -78,7 +78,7 @@ std::optional<HttpClient::error_t> HttpClient::get(std::string host, std::string
     SimpleSlam::Header header;
     string request;
     header
-        .request_type(SimpleSlam::HTTPRequestType::GET, endpoint);
+        .request_type(SimpleSlam::HTTPRequestType::GET, endpoint)
         .add("Host", host);
 
     std::string header_str = header.build();
@@ -108,7 +108,7 @@ std::optional<HttpClient::error_t> HttpClient::delete_request(std::string host, 
     SimpleSlam::Header header;
     string request;
     header
-        .request_type(SimpleSlam::HTTPRequestType::DELETE, endpoint);
+        .request_type(SimpleSlam::HTTPRequestType::DELETE, endpoint)
         .add("Host", host);
 
     std::string header_str = header.build();
