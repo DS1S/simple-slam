@@ -7,9 +7,9 @@ import (
 )
 
 type collectRequest struct {
-	BoardID   boardID `json:"board_id" validate:"required"`
-	Spatials  [][]int `json:"spatials" validate:"required"`
-	Positions [][]int `json:"positions" validate:"required"`
+	BoardID   boardID     `json:"board_id" validate:"required"`
+	Spatials  [][]float32 `json:"spatials" validate:"required"`
+	Positions [][]float32 `json:"positions" validate:"required"`
 }
 
 func collect(c echo.Context) error {
@@ -29,8 +29,8 @@ func collect(c echo.Context) error {
 	_, ok := boards[cr.BoardID]
 	if !ok {
 		boards[cr.BoardID] = &positionData{
-			make([][]int, 0),
-			make([][]int, 0),
+			make([][]float32, 0),
+			make([][]float32, 0),
 		}
 	}
 
