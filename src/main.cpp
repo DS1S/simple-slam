@@ -110,22 +110,22 @@ int main() {
     int16_t i = 0;
     SimpleSlam::Math::Vector3 gyro_offset(0, 0, 0);
     SimpleSlam::Math::Vector3 accel_offset(0, 0, 0);
-    const int num_samples = 250;
+    const int num_samples = 500;
     printf("Calibrating Gyro + Accel\n");
-    // while (i < num_samples) {
-    //     SimpleSlam::LSM6DSL::Gyro_Read(gyro_buffer);
-    //     SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
+    while (i < num_samples) {
+        SimpleSlam::LSM6DSL::Gyro_Read(gyro_buffer);
+        SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
 
-    //     const SimpleSlam::Math::Vector3 temp_accel(
-    //         accel_buffer[0], accel_buffer[1], accel_buffer[2]);
-    //     const SimpleSlam::Math::Vector3 temp_ang(gyro_buffer[0],
-    //     gyro_buffer[1],
-    //                                              gyro_buffer[2]);
-    //     gyro_offset = gyro_offset + temp_ang;
-    //     accel_offset = accel_offset + temp_accel;
-    //     i++;
-    //     ThisThread::sleep_for(20ms);
-    // }
+        const SimpleSlam::Math::Vector3 temp_accel(
+            accel_buffer[0], accel_buffer[1], accel_buffer[2]);
+        const SimpleSlam::Math::Vector3 temp_ang(gyro_buffer[0],
+        gyro_buffer[1],
+                                                 gyro_buffer[2]);
+        gyro_offset = gyro_offset + temp_ang;
+        accel_offset = accel_offset + temp_accel;
+        i++;
+        ThisThread::sleep_for(20ms);
+    }
     gyro_offset = gyro_offset / num_samples;
     accel_offset = accel_offset / num_samples;
 
@@ -134,42 +134,11 @@ int main() {
     printf("Calibrated Gyro Offset: %s\n", gyro_offset.to_string().c_str());
     printf("Calibrated Accel Offset: %s\n", accel_offset.to_string().c_str());
 
+    const SimpleSlam::Math::Vector3 temp_accel(
+            accel_buffer[0], accel_buffer[1], accel_buffer[2]);
     SimpleSlam::Math::InertialNavigationSystem ins(
-        0.02, accel_offset, gyro_offset, SimpleSlam::Math::Vector3(0, 0, 0),
+        0.01, temp_accel, accel_offset, gyro_offset, SimpleSlam::Math::Vector3(0, 0, 0),
         SimpleSlam::Math::Vector3(0, 0, 0));
-
-    SimpleSlam::Math::Vector3 p(1, 0, 0);
-    const double alpha = SimpleSlam::Math::pi / 2;
-    const double beta = SimpleSlam::Math::pi / 2;
-    const double gamma = 0;
-    const SimpleSlam::Math::Matrix3 identity_matrix(
-        {SimpleSlam::Math::Vector3(1, 0, 0), SimpleSlam::Math::Vector3(0, 1, 0),
-         SimpleSlam::Math::Vector3(0, 0, 1)});
-    const SimpleSlam::Math::Matrix3 roll(
-        {SimpleSlam::Math::Vector3(1, 0, 0),
-         SimpleSlam::Math::Vector3(0, std::cos(alpha), -1 * std::sin(alpha)),
-         SimpleSlam::Math::Vector3(0, std::sin(alpha), std::cos(alpha))});
-    const SimpleSlam::Math::Matrix3 pitch(
-        {SimpleSlam::Math::Vector3(std::cos(beta), 0, std::sin(beta)),
-         SimpleSlam::Math::Vector3(0, 1, 0),
-         SimpleSlam::Math::Vector3(-1 * std::sin(beta), 0, std::cos(beta))});
-    const SimpleSlam::Math::Matrix3 yaw(
-        {SimpleSlam::Math::Vector3(std::cos(gamma), -1 * std::sin(gamma), 0),
-         SimpleSlam::Math::Vector3(std::sin(gamma), std::cos(gamma), 0),
-         SimpleSlam::Math::Vector3(0, 0, 1)});
-
-    const SimpleSlam::Math::Matrix3 t(
-        {SimpleSlam::Math::Vector3(1, 2, 3), SimpleSlam::Math::Vector3(4, 5, 6),
-         SimpleSlam::Math::Vector3(7, 8, 9)});
-    const SimpleSlam::Math::Matrix3 j = t.transpose();
-    printf("%s\n%s\n%s\n",
-        j[0].to_string().c_str(),
-        j[1].to_string().c_str(),
-        j[2].to_string().c_str()
-    );
-
-    SimpleSlam::Math::Vector3 rv = ((identity_matrix * yaw * pitch * roll) * pitch) * p;
-    printf("P: %s ROT: %s\n", p.to_string().c_str(), rv.to_string().c_str());
 
     while (true) {
         SimpleSlam::Math::Vector3 pos = ins.get_position();
@@ -184,19 +153,12 @@ int main() {
                                            gyro_buffer[2]);
 
         SimpleSlam::Math::Vector3 t = temp_accel / 1000;
-        // p = p + ((temp_ang * 1 / 1000) * 0.02);
-        // p = p + ((temp_ang *  1 / 1000) * 0.02);
-        // p = p + SimpleSlam::Math::Vector3(
-        //     (std::atan2(t.get_x(), t.get_y())),
-        //     (std::atan2(t.get_x(), t.get_y())),
-        //     (std::atan2(t.get_x(), t.get_y()))
-        // ) * 0.1;
-        p = (temp_ang * SimpleSlam::Math::pi / 180000);
+        SimpleSlam::Math::Vector3 p = (temp_ang * SimpleSlam::Math::pi / 180000);
 
         // printf("%s %s %s\n", t.to_string().c_str(), p.to_string().c_str(),
         // ((temp_ang * 1 / 1000) * 0.02).to_string().c_str());
         ins.update_position(p, t);
-        ThisThread::sleep_for(20ms);
+        ThisThread::sleep_for(10ms);
     }
 
     while (false) {

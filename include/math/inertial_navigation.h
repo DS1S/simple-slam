@@ -13,6 +13,7 @@ namespace SimpleSlam::Math {
         public:
             InertialNavigationSystem(
                 const double time_delta,
+                const Vector3& temp_accel,
                 const Vector3& accel_offset,
                 const Vector3& gyro_offset,
                 const Vector3& velocity,
@@ -26,6 +27,7 @@ namespace SimpleSlam::Math {
         private:
             const double _time_delta;
             Quaternion _q;
+            Vector3 _temp_acc;
             Vector3 _accel_offset;
             Vector3 _gyro_offset;
             Vector3 _velocity;
