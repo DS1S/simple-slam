@@ -76,13 +76,13 @@ void SimpleSlam::Math::InertialNavigationSystem::update_position(
         rot = rot / rot.norm();
     }
 
-    const Quaternion q_a_world = rot * q_a_body * rot.inverse();
-    // const Quaternion q_a_world(
-    //     q_a_world_unoff.x() - _accel_offset[0],
-    //     q_a_world_unoff.y() - _accel_offset[1],
-    //     q_a_world_unoff.z() - _accel_offset[2],
-    //     0
-    // );
+    const Quaternion q_a_world_unoff = rot * q_a_body * rot.inverse();
+    const Quaternion q_a_world(
+        q_a_world_unoff.x() - _accel_offset[0],
+        q_a_world_unoff.y() - _accel_offset[1],
+        q_a_world_unoff.z() - _accel_offset[2],
+        0
+    );
     
     const TVector3 v(
         q_a_world.x() / q_a_world.norm(),
@@ -113,21 +113,21 @@ void SimpleSlam::Math::InertialNavigationSystem::update_position(
     ) * 9.8 * _time_delta);
     _position = _position + (_velocity * _time_delta);
     const TVector3 euler_angle = rot.euler() * 180 / SimpleSlam::Math::pi;
-    // printf("ROT: [%f %f %f] body_force: %s world_force: [%f, %f, %f]\n",
-    //     euler_angle.element(0,0), euler_angle.element(1,0), euler_angle.element(2,0),
-    //     force.to_string().c_str(),
-    //     world_force.element(0, 0),
-    //     world_force.element(1, 0),
-    //     world_force.element(2, 0)
-    // );
-    printf("body_force: %s world_force: [%f, %f, %f] VEL %s POS %s\n",
+    printf("ROT: [%f %f %f] body_force: %s world_force: [%f, %f, %f]\n",
+        euler_angle.element(0,0), euler_angle.element(1,0), euler_angle.element(2,0),
         force.to_string().c_str(),
         world_force.element(0, 0),
         world_force.element(1, 0),
-        world_force.element(2, 0),
-        _velocity.to_string().c_str(),
-        _position.to_string().c_str()
+        world_force.element(2, 0)
     );
+    // printf("body_force: %s world_force: [%f, %f, %f] VEL %s POS %s\n",
+    //     force.to_string().c_str(),
+    //     world_force.element(0, 0),
+    //     world_force.element(1, 0),
+    //     world_force.element(2, 0),
+    //     _velocity.to_string().c_str(),
+    //     _position.to_string().c_str()
+    // );
 
     // const double alpha =
     // static_cast<double>(static_cast<int>(angular_velocity.get_x() *
