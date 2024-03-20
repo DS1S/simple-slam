@@ -1,9 +1,9 @@
+#include "data/json.h"
 #include "driver/i2c.h"
 #include "driver/lis3mdl.h"
 #include "driver/lsm6dsl.h"
 #include "driver/vl53l0x.h"
 #include "math/conversion.h"
-#include "data/json.h"
 #include "mbed.h"
 
 typedef struct {
@@ -19,8 +19,7 @@ int main() {
     printf("Starting Simple-Slam\n");
 
     SimpleSlam::JSON my_data;
-    my_data
-        .add("age", 1)
+    my_data.add("age", 1)
         .add("hair", "brown")
         .add_list<float>("points", {3.1, 2, 2.1, 4});
 
@@ -48,14 +47,28 @@ int main() {
     int16_t magno_buffer[3];
     uint16_t tof_distance = 0;
 
-    while(false){
+    while (false) {
         SimpleSlam::LSM6DSL::Gyro_Read(gyro_buffer);
-        SimpleSlam::Math::Vector3 gyro(gyro_buffer[0], gyro_buffer[1], gyro_buffer[2]);
+        SimpleSlam::Math::Vector3 gyro(gyro_buffer[0], gyro_buffer[1],
+                                       gyro_buffer[2]);
         printf("GYRO %s\n", gyro.to_string().c_str());
         ThisThread::sleep_for(1s);
     }
 
-    while (false) {
+    std::vector<SimpleSlam::Math::Vector3> readings;
+    for (int i = 0; i < 100; i++) {
+        SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],
+                                     magno_buffer[2]);
+        SimpleSlam::Math::Vector3 temp_magno(magno_buffer[0], magno_buffer[1],
+                                             magno_buffer[2]);
+        readings.push_back(temp_magno);
+        ThisThread::sleep_for(100ms);
+    }
+
+    SimpleSlam::Math::magnetometer_calibration_t calibration_data =
+        SimpleSlam::Math::Fill_Magnetometer_Calibration_Data(readings);
+
+    while (true) {
         SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
         SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],
                                      magno_buffer[2]);
@@ -65,17 +78,20 @@ int main() {
         SimpleSlam::Math::Vector3 temp_magno(magno_buffer[0], magno_buffer[1],
                                              magno_buffer[2]);
 
+        SimpleSlam::Math::Vector3 adjusted_magno(
+            SimpleSlam::Math::Adjust_Magnetometer_Vector(temp_magno, calibration_data));
+
         SimpleSlam::VL53L0X::Perform_Single_Shot_Read(tof_distance);
         tof_distance /= 10;
 
-        SimpleSlam::Math::Vector3 north_vector(temp_magno.normalize());
+        SimpleSlam::Math::Vector3 north_vector(adjusted_magno.normalize());
         SimpleSlam::Math::Vector3 up_vector(temp_accel.normalize());
         SimpleSlam::Math::Vector3 tof_vector(0, 0, 1);
         SimpleSlam::Math::Vector2 tof_direction_vector =
-            SimpleSlam::Math::convert_tof_direction_vector(
+            SimpleSlam::Math::Convert_Tof_Direction_Vector(
                 north_vector, up_vector, tof_vector);
         SimpleSlam::Math::Vector2 mapped_point =
-            SimpleSlam::Math::convert_to_spatial_point(
+            SimpleSlam::Math::Convert_To_Spatial_Point(
                 tof_direction_vector.normalize(), tof_distance);
 
         printf("TOF SENSOR DISTANCE: %dcm\n", tof_distance);
