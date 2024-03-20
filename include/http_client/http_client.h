@@ -1,5 +1,6 @@
 #include "mbed.h"
 #include "WiFiInterface.h"
+#include "data/json.h"
 
 #define RESPONSE_SIZE 1024
 namespace SimpleSlam {
@@ -17,7 +18,7 @@ class HttpClient {
         TCPSocket _socket;
         std::unique_ptr<WiFiInterface> _wifi;
         SocketAddress _addr;
-        std::string ErrorMessage(ErrorCode error);
+        std::string error_message(ErrorCode error);
 
     public:
         typedef std::pair<ErrorCode, std::string> error_t;
@@ -28,7 +29,7 @@ class HttpClient {
 
         std::optional<error_t> deinit();
 
-        std::optional<error_t> post(std::string host, std::string endpoint, std::string body);
+        std::optional<error_t> post(std::string host, std::string endpoint, JSON body_json);
 
         std::optional<error_t> get(std::string host, std::string endpoint);
 

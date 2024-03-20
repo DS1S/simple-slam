@@ -6,12 +6,13 @@
 #include "http_client/http_client.h"
 #include "http_client/wifi_config.h"
 #include "data/header.h"
+#include "data/json.h"
 
 using namespace SimpleSlam;
 
 SimpleSlam::HttpClient::HttpClient(WiFiInterface* wifi) : _wifi(wifi) {}
 
-std::string HttpClient::ErrorMessage(ErrorCode error) {
+std::string HttpClient::error_message(ErrorCode error) {
     switch (error) {
         case ErrorCode::WIFI_CONNECT_ERROR:
             return "Failed to Connect to Wifi\n";
@@ -31,7 +32,7 @@ std::optional<HttpClient::error_t> HttpClient::init() {
     if (error != 0) {
         return std::make_optional(std::make_pair(    \
             ErrorCode::WIFI_CONNECT_ERROR,           \
-            ErrorMessage(ErrorCode::WIFI_CONNECT_ERROR)));
+            error_message(ErrorCode::WIFI_CONNECT_ERROR)));
     }
     return {};
 }
@@ -41,9 +42,10 @@ std::optional<HttpClient::error_t> HttpClient::deinit() {
     return {};
 }
 
-std::optional<HttpClient::error_t> HttpClient::post(std::string host, std::string endpoint, std::string body) {
+std::optional<HttpClient::error_t> HttpClient::post(std::string host, std::string endpoint, JSON body_json) {
     SimpleSlam::Header header;
     string request;
+    string body = body_json.build(); 
     header
         .request_type(SimpleSlam::HTTPRequestType::POST, endpoint)
         .add("Host", host)
@@ -68,7 +70,7 @@ std::optional<HttpClient::error_t> HttpClient::post(std::string host, std::strin
         printf("POST Response: %s\n", buffer);
         return std::make_optional(std::make_pair(
             ErrorCode::POST_NOT_OK,
-            ErrorMessage(ErrorCode::POST_NOT_OK)));
+            error_message(ErrorCode::POST_NOT_OK)));
     }
     _socket.close();
     return {};
@@ -98,7 +100,7 @@ std::optional<HttpClient::error_t> HttpClient::get(std::string host, std::string
         printf("GET Response: %s\n", buffer);
         return std::make_optional(std::make_pair(
             ErrorCode::GET_NOT_OK,
-            ErrorMessage(ErrorCode::GET_NOT_OK)));
+            error_message(ErrorCode::GET_NOT_OK)));
     }
     _socket.close();
     return {};
@@ -128,7 +130,7 @@ std::optional<HttpClient::error_t> HttpClient::delete_request(std::string host, 
         printf("DELETE Response: %s\n", buffer);
         return std::make_optional(std::make_pair(
             ErrorCode::DELETE_NOT_OK,
-            ErrorMessage(ErrorCode::DELETE_NOT_OK)));
+            error_message(ErrorCode::DELETE_NOT_OK)));
     }
     _socket.close();
     return {};

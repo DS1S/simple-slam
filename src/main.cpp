@@ -30,7 +30,15 @@ void test_http_client() {
         printf("[HttpClient]: GET Succeeded\n");
     }
 
-    status = http_client.post("api.restful-api.dev", "/objects", "{\"name\":\"testobject100\",\"data\":{\"value\":1}}");
+    SimpleSlam::JSON body_data;
+    body_data
+        .add("value", 1);
+    SimpleSlam::JSON post_body;
+    post_body
+        .add("name", "testobject100")
+        .add("data", body_data);
+
+    status = http_client.post("api.restful-api.dev", "/objects", post_body);
     if (status.has_value()) {
         printf(status.value().second.c_str());
     } else {
