@@ -12,10 +12,6 @@ typedef struct magnetometer_calibration {
     double offset_x;
     double offset_y;
     double offset_z;
-    double average_delta_x;
-    double average_delta_y;
-    double average_delta_z;
-    double average_delta;
     double scale_x;
     double scale_y;
     double scale_z;
