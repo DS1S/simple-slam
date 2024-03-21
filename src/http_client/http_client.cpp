@@ -10,7 +10,7 @@
 
 using namespace SimpleSlam;
 
-SimpleSlam::HttpClient::HttpClient(WiFiInterface* wifi) : _wifi(wifi) {}
+SimpleSlam::HttpClient::HttpClient(unique_ptr<WiFiInterface> wifi) : _wifi(std::move(wifi)) {}
 
 std::string HttpClient::error_message(ErrorCode error) {
     switch (error) {
@@ -37,12 +37,7 @@ std::optional<HttpClient::error_t> HttpClient::init() {
     return {};
 }
 
-std::optional<HttpClient::error_t> HttpClient::deinit() {
-    _wifi.release();
-    return {};
-}
-
-std::optional<HttpClient::error_t> HttpClient::post(std::string host, std::string endpoint, JSON body_json) {
+std::optional<HttpClient::error_t> HttpClient::post_request(std::string host, std::string endpoint, JSON body_json) {
     SimpleSlam::Header header;
     string request;
     string body = body_json.build(); 
@@ -76,7 +71,7 @@ std::optional<HttpClient::error_t> HttpClient::post(std::string host, std::strin
     return {};
 }
 
-std::optional<HttpClient::error_t> HttpClient::get(std::string host, std::string endpoint) {
+std::optional<HttpClient::error_t> HttpClient::get_request(std::string host, std::string endpoint) {
     SimpleSlam::Header header;
     string request;
     header

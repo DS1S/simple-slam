@@ -15,14 +15,12 @@ SimpleSlam::JSONBuilder SimpleSlam::JSON::_builder(
          ss << std::quoted(s);
          return ss.str();
      }),
-     JSONBuilder::to_visitor<SimpleSlam::JSON>([](SimpleSlam::JSON j) -> std::string {
-         return j.build();
+     JSONBuilder::to_visitor<SimpleSlam::JSON>([](SimpleSlam::JSON const& j) -> std::string {
+         return "{" + JSON::_builder.build(j._fields) + "}";
      }),
      JSONBuilder::to_visitor<std::unordered_map<std::string, std::any>>(
          [](std::unordered_map<std::string, std::any> const& map) {
              std::stringstream ss;
-             ss << "{";
-
              for (auto itr = map.begin(); itr != map.end();) {
                  ss << std::quoted(itr->first) << ":"
                     << JSON::_builder.build(itr->second);
@@ -32,7 +30,6 @@ SimpleSlam::JSONBuilder SimpleSlam::JSON::_builder(
                      ss << ",";
                  }
              }
-             ss << "}";
              return ss.str();
          })});
 
@@ -47,4 +44,4 @@ SimpleSlam::JSON& SimpleSlam::JSON::add(std::string field,
     return *this;
 }
 
-std::string SimpleSlam::JSON::build() { return _builder.build(_fields); }
+std::string SimpleSlam::JSON::build() { return _builder.build(*this); }

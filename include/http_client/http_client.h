@@ -23,15 +23,13 @@ class HttpClient {
     public:
         typedef std::pair<ErrorCode, std::string> error_t;
 
-        HttpClient(WiFiInterface* wifi);
+        HttpClient(std::unique_ptr<WiFiInterface> wifi);
 
         std::optional<error_t> init();
 
-        std::optional<error_t> deinit();
+        std::optional<error_t> post_request(std::string host, std::string endpoint, JSON body_json);
 
-        std::optional<error_t> post(std::string host, std::string endpoint, JSON body_json);
-
-        std::optional<error_t> get(std::string host, std::string endpoint);
+        std::optional<error_t> get_request(std::string host, std::string endpoint);
 
         std::optional<error_t> delete_request(std::string host, std::string endpoint);
 };

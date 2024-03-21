@@ -6,7 +6,8 @@
 #include "math/conversion.h"
 #include "data/json.h"
 #include "http_client/http_client.h"
-#include <ISM43362Interface.h>
+#include "WiFiInterface.h"
+#include "ISM43362Interface.h"
 #include "mbed.h"
 #include "data/header.h"
 
@@ -20,10 +21,10 @@ typedef struct {
 } offset_vars;
 
 void test_http_client() {
-    ISM43362Interface wifi;
-    SimpleSlam::HttpClient http_client(&wifi);
+    std::unique_ptr<WiFiInterface> wifi = std::make_unique<ISM43362Interface>();
+    SimpleSlam::HttpClient http_client(std::move(wifi));
     http_client.init();
-    auto status = http_client.get("api.restful-api.dev", "/objects/7");
+    auto status = http_client.get_request("api.restful-api.dev", "/objects/7");
     if (status.has_value()) {
         printf(status.value().second.c_str());
     } else {
@@ -38,13 +39,12 @@ void test_http_client() {
         .add("name", "testobject100")
         .add("data", body_data);
 
-    status = http_client.post("api.restful-api.dev", "/objects", post_body);
+    status = http_client.post_request("api.restful-api.dev", "/objects", post_body);
     if (status.has_value()) {
         printf(status.value().second.c_str());
     } else {
         printf("[HttpClient]: POST Succeeded\n");
     }
-    http_client.deinit();
 }
 
 int main() {
@@ -102,6 +102,7 @@ int main() {
 
     Thread t;
     t.start(test_http_client);
+    while (true);
     while (true) {
         SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
         SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],
