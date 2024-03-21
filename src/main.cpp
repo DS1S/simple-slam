@@ -1,10 +1,15 @@
+#include "ISM43362Interface.h"
+#include "WiFiInterface.h"
+#include "car.h"
+#include "data/header.h"
+#include "data/json.h"
 #include "driver/i2c.h"
 #include "driver/lis3mdl.h"
 #include "driver/lsm6dsl.h"
 #include "driver/vl53l0x.h"
+#include "http_client/http_client.h"
 #include "math/conversion.h"
 #include "mbed.h"
-#include "car.h"
 
 typedef struct {
     int16_t minX;
@@ -15,8 +20,41 @@ typedef struct {
     int16_t maxZ;
 } offset_vars;
 
+void test_http_client() {
+    std::unique_ptr<WiFiInterface> wifi = std::make_unique<ISM43362Interface>();
+    SimpleSlam::HttpClient http_client(std::move(wifi));
+    http_client.init();
+    auto status = http_client.get_request("api.restful-api.dev", "/objects/7");
+    if (status.has_value()) {
+        printf(status.value().second.c_str());
+    } else {
+        printf("[HttpClient]: GET Succeeded\n");
+    }
+
+    SimpleSlam::JSON body_data;
+    body_data.add("value", 1);
+    SimpleSlam::JSON post_body;
+    post_body.add("name", "testobject100").add("data", body_data);
+
+    status =
+        http_client.post_request("api.restful-api.dev", "/objects", post_body);
+    if (status.has_value()) {
+        printf(status.value().second.c_str());
+    } else {
+        printf("[HttpClient]: POST Succeeded\n");
+    }
+}
+
 int main() {
     printf("Starting Simple-Slam\n");
+
+    SimpleSlam::JSON my_data;
+    my_data.add("age", 1)
+        .add("hair", "brown")
+        .add_list<float>("points", {3.1, 2, 2.1, 4});
+
+    std::string my_data_str = my_data.build();
+    printf("My Data: %s \n", my_data_str.c_str());
 
     SimpleSlam::LIS3MDL::LIS3MDL_Config_t config{
         .output_rate = LOPTS_OUTPUT_RATE_80_HZ,  // 80 Hz
@@ -30,15 +68,40 @@ int main() {
 
     SimpleSlam::I2C_Init();
     SimpleSlam::LSM6DSL::Accel_Init();
+    SimpleSlam::LSM6DSL::Gyro_Init();
     SimpleSlam::LIS3MDL::Init(config);
     SimpleSlam::VL53L0X::Init(tof_config);
 
     int16_t accel_buffer[3];
+    int16_t gyro_buffer[3];
     int16_t magno_buffer[3];
     uint16_t tof_distance = 0;
 
     SimpleSlam::Car::Init();
 
+    while (false) {
+        SimpleSlam::LSM6DSL::Gyro_Read(gyro_buffer);
+        SimpleSlam::Math::Vector3 gyro(gyro_buffer[0], gyro_buffer[1],
+                                       gyro_buffer[2]);
+        printf("GYRO %s\n", gyro.to_string().c_str());
+        ThisThread::sleep_for(1s);
+    }
+
+    std::vector<SimpleSlam::Math::Vector3> readings;
+    for (int i = 0; i < 100; i++) {
+        SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],
+                                     magno_buffer[2]);
+        SimpleSlam::Math::Vector3 temp_magno(magno_buffer[0], magno_buffer[1],
+                                             magno_buffer[2]);
+        readings.push_back(temp_magno);
+        ThisThread::sleep_for(100ms);
+    }
+
+    SimpleSlam::Math::magnetometer_calibration_t calibration_data =
+        SimpleSlam::Math::Fill_Magnetometer_Calibration_Data(readings);
+
+    Thread t;
+    t.start(test_http_client);
     while (true) {
         SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
         SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],
@@ -49,17 +112,21 @@ int main() {
         SimpleSlam::Math::Vector3 temp_magno(magno_buffer[0], magno_buffer[1],
                                              magno_buffer[2]);
 
+        SimpleSlam::Math::Vector3 adjusted_magno(
+            SimpleSlam::Math::Adjust_Magnetometer_Vector(temp_magno,
+                                                         calibration_data));
+
         SimpleSlam::VL53L0X::Perform_Single_Shot_Read(tof_distance);
         tof_distance /= 10;
 
-        SimpleSlam::Math::Vector3 north_vector(temp_magno.normalize());
+        SimpleSlam::Math::Vector3 north_vector(adjusted_magno.normalize());
         SimpleSlam::Math::Vector3 up_vector(temp_accel.normalize());
         SimpleSlam::Math::Vector3 tof_vector(0, 0, 1);
         SimpleSlam::Math::Vector2 tof_direction_vector =
-            SimpleSlam::Math::convert_tof_direction_vector(
+            SimpleSlam::Math::Convert_Tof_Direction_Vector(
                 north_vector, up_vector, tof_vector);
         SimpleSlam::Math::Vector2 mapped_point =
-            SimpleSlam::Math::convert_to_spatial_point(
+            SimpleSlam::Math::Convert_To_Spatial_Point(
                 tof_direction_vector.normalize(), tof_distance);
 
         printf("TOF SENSOR DISTANCE: %dcm\n", tof_distance);
