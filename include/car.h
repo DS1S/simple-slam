@@ -5,6 +5,8 @@
  * Author: Makan Dehizadeh
  */
 
+#pragma once
+
 class CarHardwareInterface {
    public:
     CarHardwareInterface();
