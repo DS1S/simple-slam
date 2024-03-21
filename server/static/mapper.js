@@ -1,4 +1,4 @@
-const canvas = document.getElementById('map_canvas');
+const canvas = document.getElementById('map-canvas');
 const ctx = canvas.getContext('2d');
 
 // Computed when data received, this is a global!
