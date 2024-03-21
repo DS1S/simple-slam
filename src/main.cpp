@@ -4,6 +4,7 @@
 #include "driver/vl53l0x.h"
 #include "math/conversion.h"
 #include "mbed.h"
+#include "car.h"
 
 typedef struct {
     int16_t minX;
@@ -35,6 +36,9 @@ int main() {
     int16_t accel_buffer[3];
     int16_t magno_buffer[3];
     uint16_t tof_distance = 0;
+
+    SimpleSlam::Car::Init();
+
     while (true) {
         SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
         SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],
@@ -67,8 +71,28 @@ int main() {
                tof_direction_vector.normalize().to_string().c_str(),
                tof_direction_vector.normalize());
         printf("Spatial Vector: %s\n", mapped_point.to_string().c_str());
-        ThisThread::sleep_for(1s);
+
+        if (tof_distance > 25) {
+            SimpleSlam::Car::MoveForward();
+        } else {
+            // Stop for a second and smile :D
+            SimpleSlam::Car::Stop();
+            ThisThread::sleep_for(1s);
+
+            // Pick a random direction
+            if (rand() % 2 == 0) {
+                SimpleSlam::Car::TurnLeft();
+                ThisThread::sleep_for(750ms);
+            } else {
+                SimpleSlam::Car::TurnRight();
+                ThisThread::sleep_for(750ms);
+            }
+        }
+
+        ThisThread::sleep_for(250ms);
     }
+
+    return 0;
 }
 
 int test_magetometer() {
