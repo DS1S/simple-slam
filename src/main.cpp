@@ -1,15 +1,15 @@
+#include "ISM43362Interface.h"
+#include "WiFiInterface.h"
+#include "car.h"
+#include "data/header.h"
 #include "data/json.h"
 #include "driver/i2c.h"
 #include "driver/lis3mdl.h"
 #include "driver/lsm6dsl.h"
 #include "driver/vl53l0x.h"
-#include "math/conversion.h"
-#include "data/json.h"
 #include "http_client/http_client.h"
-#include "WiFiInterface.h"
-#include "ISM43362Interface.h"
+#include "math/conversion.h"
 #include "mbed.h"
-#include "data/header.h"
 
 typedef struct {
     int16_t minX;
@@ -32,14 +32,12 @@ void test_http_client() {
     }
 
     SimpleSlam::JSON body_data;
-    body_data
-        .add("value", 1);
+    body_data.add("value", 1);
     SimpleSlam::JSON post_body;
-    post_body
-        .add("name", "testobject100")
-        .add("data", body_data);
+    post_body.add("name", "testobject100").add("data", body_data);
 
-    status = http_client.post_request("api.restful-api.dev", "/objects", post_body);
+    status =
+        http_client.post_request("api.restful-api.dev", "/objects", post_body);
     if (status.has_value()) {
         printf(status.value().second.c_str());
     } else {
@@ -79,6 +77,9 @@ int main() {
     int16_t magno_buffer[3];
     uint16_t tof_distance = 0;
 
+    CarHardwareInterface car;
+    car.init();
+
     while (false) {
         SimpleSlam::LSM6DSL::Gyro_Read(gyro_buffer);
         SimpleSlam::Math::Vector3 gyro(gyro_buffer[0], gyro_buffer[1],
@@ -113,7 +114,8 @@ int main() {
                                              magno_buffer[2]);
 
         SimpleSlam::Math::Vector3 adjusted_magno(
-            SimpleSlam::Math::Adjust_Magnetometer_Vector(temp_magno, calibration_data));
+            SimpleSlam::Math::Adjust_Magnetometer_Vector(temp_magno,
+                                                         calibration_data));
 
         SimpleSlam::VL53L0X::Perform_Single_Shot_Read(tof_distance);
         tof_distance /= 10;
@@ -137,8 +139,28 @@ int main() {
                tof_direction_vector.normalize().to_string().c_str(),
                tof_direction_vector.normalize());
         printf("Spatial Vector: %s\n", mapped_point.to_string().c_str());
-        ThisThread::sleep_for(1s);
+
+        if (tof_distance > 25) {
+            car.move_forward();
+        } else {
+            // Stop for a second and smile :D
+            car.stop();
+            ThisThread::sleep_for(1s);
+
+            // Pick a random direction
+            if (rand() % 2 == 0) {
+                car.turn_left();
+                ThisThread::sleep_for(750ms);
+            } else {
+                car.turn_right();
+                ThisThread::sleep_for(750ms);
+            }
+        }
+
+        ThisThread::sleep_for(250ms);
     }
+
+    return 0;
 }
 
 int test_magetometer() {
