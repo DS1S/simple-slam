@@ -10,14 +10,14 @@ class CarHardwareInterface {
     CarHardwareInterface();
 
     void init();
-    void moveForward();
-    void turnLeft();
-    void turnRight();
+    void move_forward();
+    void turn_left();
+    void turn_right();
     void stop();
 
    private:
-    PwmOut wheel1_forward;
-    PwmOut wheel1_backward;
-    PwmOut wheel2_forward;
-    PwmOut wheel2_backward;
+    PwmOut _wheel1_forward;
+    PwmOut _wheel1_backward;
+    PwmOut _wheel2_forward;
+    PwmOut _wheel2_backward;
 };

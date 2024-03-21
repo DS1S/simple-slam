@@ -141,7 +141,7 @@ int main() {
         printf("Spatial Vector: %s\n", mapped_point.to_string().c_str());
 
         if (tof_distance > 25) {
-            car.moveForward();
+            car.move_forward();
         } else {
             // Stop for a second and smile :D
             car.stop();
@@ -149,10 +149,10 @@ int main() {
 
             // Pick a random direction
             if (rand() % 2 == 0) {
-                car.turnLeft();
+                car.turn_left();
                 ThisThread::sleep_for(750ms);
             } else {
-                car.turnRight();
+                car.turn_right();
                 ThisThread::sleep_for(750ms);
             }
         }
