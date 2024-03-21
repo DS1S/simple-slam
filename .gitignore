@@ -8,3 +8,4 @@
 lib/BSP_B-L475E-IOT01-bfe8272ced90
 .idea
 */tmp
+include/http_client/wifi_config.h

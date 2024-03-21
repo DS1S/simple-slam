@@ -4,7 +4,12 @@
 #include "driver/lsm6dsl.h"
 #include "driver/vl53l0x.h"
 #include "math/conversion.h"
+#include "data/json.h"
+#include "http_client/http_client.h"
+#include "WiFiInterface.h"
+#include "ISM43362Interface.h"
 #include "mbed.h"
+#include "data/header.h"
 
 typedef struct {
     int16_t minX;
@@ -14,6 +19,33 @@ typedef struct {
     int16_t minZ;
     int16_t maxZ;
 } offset_vars;
+
+void test_http_client() {
+    std::unique_ptr<WiFiInterface> wifi = std::make_unique<ISM43362Interface>();
+    SimpleSlam::HttpClient http_client(std::move(wifi));
+    http_client.init();
+    auto status = http_client.get_request("api.restful-api.dev", "/objects/7");
+    if (status.has_value()) {
+        printf(status.value().second.c_str());
+    } else {
+        printf("[HttpClient]: GET Succeeded\n");
+    }
+
+    SimpleSlam::JSON body_data;
+    body_data
+        .add("value", 1);
+    SimpleSlam::JSON post_body;
+    post_body
+        .add("name", "testobject100")
+        .add("data", body_data);
+
+    status = http_client.post_request("api.restful-api.dev", "/objects", post_body);
+    if (status.has_value()) {
+        printf(status.value().second.c_str());
+    } else {
+        printf("[HttpClient]: POST Succeeded\n");
+    }
+}
 
 int main() {
     printf("Starting Simple-Slam\n");
@@ -68,6 +100,8 @@ int main() {
     SimpleSlam::Math::magnetometer_calibration_t calibration_data =
         SimpleSlam::Math::Fill_Magnetometer_Calibration_Data(readings);
 
+    Thread t;
+    t.start(test_http_client);
     while (true) {
         SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
         SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],

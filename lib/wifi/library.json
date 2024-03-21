@@ -1,0 +1,13 @@
+{
+	"name": "wifi-ISM43362",
+	"build": {
+    "builder": "MbedLibBuilder",
+		"libArchive": false,
+		"flags": [
+			"-I ISM43362/",
+      "-I ISM43362/ATParser",
+      "-I ISM43362/ATParser/BufferedSpi",
+			"-I ISM43362/ATParser/BufferedSpi/Buffer"
+		]
+	}
+}
