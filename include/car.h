@@ -1,23 +1,23 @@
+#include <mbed.h>
+
 /**
-* Car hardware interface
-* Author: Makan Dehizadeh
-*/
+ * Car hardware interface
+ * Author: Makan Dehizadeh
+ */
 
-#pragma once
+class CarHardwareInterface {
+   public:
+    CarHardwareInterface();
 
-#include "mbed.h"
+    void init();
+    void moveForward();
+    void turnLeft();
+    void turnRight();
+    void stop();
 
-namespace SimpleSlam::Car {
-
-#define WHEEL1_FORWARD PB_4
-#define WHEEL1_BACKWARD PB_1
-#define WHEEL2_FORWARD PA_15
-#define WHEEL2_BACKWARD PA_2
-
-void Init();
-void MoveForward();
-void TurnLeft();
-void TurnRight();
-void Stop();
-
-}  // namespace SimpleSlam::Car
+   private:
+    PwmOut wheel1_forward;
+    PwmOut wheel1_backward;
+    PwmOut wheel2_forward;
+    PwmOut wheel2_backward;
+};

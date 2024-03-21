@@ -5,12 +5,12 @@
 
 #include "car.h"
 
-PwmOut wheel1_forward(WHEEL1_BACKWARD);
-PwmOut wheel1_backward(WHEEL1_FORWARD);
-PwmOut wheel2_forward(WHEEL2_FORWARD);
-PwmOut wheel2_backward(WHEEL2_BACKWARD);
+CarHardwareInterface::CarHardwareInterface()
+    : wheel1_forward(PB_4), wheel1_backward(PB_1),
+      wheel2_forward(PA_15), wheel2_backward(PA_2) {
+}
 
-void SimpleSlam::Car::Init() {
+void CarHardwareInterface::init() {
     printf("Car::Init\n");
 
     // Set the duty cycle
@@ -20,8 +20,9 @@ void SimpleSlam::Car::Init() {
     wheel2_backward.write(0.0f);
 }
 
-void SimpleSlam::Car::MoveForward() {
+void CarHardwareInterface::moveForward() {
     printf("Car::MoveForward\n");
+
     // Move the car forward
     wheel1_backward.write(0.0f);
     wheel2_backward.write(0.0f);
@@ -29,8 +30,9 @@ void SimpleSlam::Car::MoveForward() {
     wheel2_forward.write(1.0f);
 }
 
-void SimpleSlam::Car::TurnLeft() {
+void CarHardwareInterface::turnLeft() {
     printf("Car::TurnLeft\n");
+
     // Turn the car left
     wheel1_backward.write(0.0f);
     wheel2_backward.write(0.0f);
@@ -38,8 +40,9 @@ void SimpleSlam::Car::TurnLeft() {
     wheel2_forward.write(1.0f);
 }
 
-void SimpleSlam::Car::TurnRight() {
+void CarHardwareInterface::turnRight() {
     printf("Car::TurnRight\n");
+
     // Turn the car right
     wheel1_backward.write(0.0f);
     wheel2_backward.write(0.0f);
@@ -47,9 +50,10 @@ void SimpleSlam::Car::TurnRight() {
     wheel2_forward.write(0.0f);
 }
 
-void SimpleSlam::Car::Stop() {
-    printf("Car::MoveBackward\n");
-    // Move the car backward
+void CarHardwareInterface::stop() {
+    printf("Car::Stop\n");
+
+    // Stop the car
     wheel1_forward.write(0.0f);
     wheel2_forward.write(0.0f);
     wheel1_backward.write(0.0f);

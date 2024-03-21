@@ -77,7 +77,8 @@ int main() {
     int16_t magno_buffer[3];
     uint16_t tof_distance = 0;
 
-    SimpleSlam::Car::Init();
+    CarHardwareInterface car;
+    car.init();
 
     while (false) {
         SimpleSlam::LSM6DSL::Gyro_Read(gyro_buffer);
@@ -140,18 +141,18 @@ int main() {
         printf("Spatial Vector: %s\n", mapped_point.to_string().c_str());
 
         if (tof_distance > 25) {
-            SimpleSlam::Car::MoveForward();
+            car.moveForward();
         } else {
             // Stop for a second and smile :D
-            SimpleSlam::Car::Stop();
+            car.stop();
             ThisThread::sleep_for(1s);
 
             // Pick a random direction
             if (rand() % 2 == 0) {
-                SimpleSlam::Car::TurnLeft();
+                car.turnLeft();
                 ThisThread::sleep_for(750ms);
             } else {
-                SimpleSlam::Car::TurnRight();
+                car.turnRight();
                 ThisThread::sleep_for(750ms);
             }
         }
