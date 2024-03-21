@@ -102,7 +102,6 @@ int main() {
 
     Thread t;
     t.start(test_http_client);
-    while (true);
     while (true) {
         SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
         SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],
