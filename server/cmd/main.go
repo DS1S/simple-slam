@@ -12,6 +12,7 @@ import (
 func main() {
 	e := echo.New()
 	e.Use(middleware.Logger())
+	e.Use(middleware.Static("static"))
 	WithValidator(e)
 
 	api.WithRoutes(e)

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Simple SLAM - Viewer</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+            padding: 20px;
+            display: block;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        body {
+            font-family: sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center;">Simple SLAM - Viewer</h1>
+    <canvas id="map_canvas" width="600" height="400"></canvas>
+    <p style="text-align: center;">Points updated: <span id="updated">updating..</span></p>
+
+    <script src="mapper.js"></script>
+</body>
+</html>

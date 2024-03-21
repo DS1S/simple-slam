@@ -31,8 +31,8 @@ func points(c echo.Context) error {
 
 	response := pointsResponse{}
 	if pr.Mock {
-		response.SpatialPoints = [][]float32{{5, 5}, {5, 6}, {5, 8}}
-		response.PositionPoints = [][]float32{{1, 2}, {1, 3}, {1, 7}}
+		response.SpatialPoints = [][]float32{{0, 0}, {2, 0.5}, {4, -0.2}, {6, 0.3}, {8, -0.1}, {10, 0}, {9.8, 2}, {10.2, 4}, {9.9, 6}, {10.1, 8}, {10, 10}, {8, 9.5}, {6, 10.2}, {4, 9.8}, {2, 10.1}, {0, 10}, {0.2, 8}, {-0.2, 6}, {0.1, 4}, {-0.1, 2}, {0, 0}}
+		response.PositionPoints = [][]float32{{1, 1}, {1, 3}, {3, 3}, {3, 6}, {5, 6}, {5, 9}, {7, 9}, {7, 7}, {9, 7}}
 	} else {
 		board, ok := boards[pr.BoardID]
 		if !ok {
