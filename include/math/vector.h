@@ -1,4 +1,5 @@
 #pragma once
+
 #include <string>
 
 namespace SimpleSlam::Math {
@@ -6,7 +7,6 @@ namespace SimpleSlam::Math {
 class Vector3 {
    public:
     Vector3(double x, double y, double z);
-    // Vector3(const Vector3& other);
     double dot(const Vector3& other) const;
     Vector3 cross(const Vector3& other) const;
     Vector3 normalize() const;

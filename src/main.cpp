@@ -11,6 +11,7 @@
 #include "math.h"
 #include "math/conversion.h"
 #include "math/inertial_navigation.h"
+#include "math/quaternion.h"
 #include "mbed.h"
 
 typedef struct {
@@ -91,7 +92,7 @@ int main() {
     }
 
     std::vector<SimpleSlam::Math::Vector3> readings;
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 200; i++) {
         SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],
                                      magno_buffer[2]);
         SimpleSlam::Math::Vector3 temp_magno(magno_buffer[0], magno_buffer[1],
@@ -103,10 +104,18 @@ int main() {
     SimpleSlam::Math::magnetometer_calibration_t calibration_data =
         SimpleSlam::Math::Fill_Magnetometer_Calibration_Data(readings);
 
+    printf("%f %f %f %f %f %f\n",
+        calibration_data.offset_x,
+        calibration_data.offset_y,
+        calibration_data.offset_z,
+        calibration_data.scale_x,
+        calibration_data.scale_y,
+        calibration_data.scale_z
+    );
+
     Thread t;
-    t.start(test_http_client);
-    
-    while(true){
+    t.start(test_http_client);    
+
     int16_t i = 0;
     SimpleSlam::Math::Vector3 gyro_offset(0, 0, 0);
     SimpleSlam::Math::Vector3 accel_offset(0, 0, 0);
@@ -133,31 +142,68 @@ int main() {
     accel_offset = accel_offset / 1000;
     printf("Calibrated Gyro Offset: %s\n", gyro_offset.to_string().c_str());
     printf("Calibrated Accel Offset: %s\n", accel_offset.to_string().c_str());
-
+    SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],
+                                magno_buffer[2]);
+    SimpleSlam::Math::Vector3 temp_magno(magno_buffer[0], magno_buffer[1],
+                                             0);         
+    temp_magno = temp_magno.normalize();
+    // printf("%s\n", )
+    
     const SimpleSlam::Math::Vector3 temp_accel(
             accel_buffer[0], accel_buffer[1], accel_buffer[2]);
     SimpleSlam::Math::InertialNavigationSystem ins(
-        0.01, temp_accel, accel_offset, gyro_offset, SimpleSlam::Math::Vector3(0, 0, 0),
+        0.01, temp_magno, accel_offset, gyro_offset, SimpleSlam::Math::Vector3(0, 0, 0),
         SimpleSlam::Math::Vector3(0, 0, 0));
+
+    for(int i = 0; i < 8; i++) {
+        SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
+        SimpleSlam::Math::Vector3 temp_accel(accel_buffer[0], accel_buffer[1],
+                                            accel_buffer[2]);
+        SimpleSlam::Math::Vector3 t = temp_accel / 1000;
+        t = t.normalize();
+
+        ins.add_sample(t);
+    }
 
     while (true) {
         SimpleSlam::Math::Vector3 pos = ins.get_position();
         // printf("POS %s\n", pos.to_string().c_str());
+        const double declination = -1.11666667;
 
         SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
         SimpleSlam::LSM6DSL::Gyro_Read(gyro_buffer);
+        SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],
+                                     magno_buffer[2]);
 
         SimpleSlam::Math::Vector3 temp_accel(accel_buffer[0], accel_buffer[1],
-                                             accel_buffer[2]);
+                                            accel_buffer[2]);
         SimpleSlam::Math::Vector3 temp_ang(gyro_buffer[0], gyro_buffer[1],
                                            gyro_buffer[2]);
+        // SimpleSlam::Math::Vector3 temp_ang(0, 90000,
+        //                                    0);
+        SimpleSlam::Math::Vector3 temp_magno(magno_buffer[0], magno_buffer[1],
+                                             magno_buffer[2]);
+
+        SimpleSlam::Math::Vector3 calibrated_magnet = SimpleSlam::Math::Adjust_Magnetometer_Vector(temp_magno, calibration_data);
+        calibrated_magnet = calibrated_magnet.normalize();
+        double heading = (atan2(calibrated_magnet[1], calibrated_magnet[0]) * 180 / SimpleSlam::Math::pi) + declination;
+        if (heading < 0) heading += 360;
+
+        // const Quaternion q = Quaternion::axis_angle_to_quat(heading, TVector3(0,0,1));
+        // const Quaternion north = q * Quaternion(1,0,0,0) * q.inverse();
+        // const SimpleSlam::Math::Vector3 e_north(north.x() / north.norm(), north.y() / north.norm(), north.z() / north.norm());
+        // printf("MAGNO: %s HEADING: %f\n", calibrated_magnet.to_string().c_str(), heading);
+
 
         SimpleSlam::Math::Vector3 t = temp_accel / 1000;
+        t = t.normalize();
         SimpleSlam::Math::Vector3 p = (temp_ang * SimpleSlam::Math::pi / 180000);
+        // p = p.normalize();
 
         // printf("%s %s %s\n", t.to_string().c_str(), p.to_string().c_str(),
         // ((temp_ang * 1 / 1000) * 0.02).to_string().c_str());
-        ins.update_position(p, t);
+        ins.add_sample((temp_accel / 1000) * 9.8);
+        ins.update_position(p, t, calibrated_magnet);
         ThisThread::sleep_for(10ms);
     }
 

@@ -1,9 +1,10 @@
 #pragma once
 
-#include <array>
+#include <deque>
 
 #include "math/vector.h"
 #include "math/matrix.h"
+#include "math/tmatrix.h"
 #include "math/quaternion.h"
 
 
@@ -13,26 +14,28 @@ namespace SimpleSlam::Math {
         public:
             InertialNavigationSystem(
                 const double time_delta,
-                const Vector3& temp_accel,
+                const Vector3& e_north,
                 const Vector3& accel_offset,
                 const Vector3& gyro_offset,
                 const Vector3& velocity,
                 const Vector3& position
             );
-            Matrix3 get_rotation_matrix() const;
             Vector3 get_velocity() const;
             Vector3 get_position() const;
-            void update_position(const Vector3& angular_velocity, const Vector3& force);
+            void update_position(const Vector3& angular_velocity, const Vector3& force, const Vector3& magno);
+            void add_sample(const Vector3& sample);
+            double calculate_variance() const;
 
         private:
+            static const int _E = 8;
+            static const int _VL = 16;
             const double _time_delta;
+            Vector3 _e_north;
             Quaternion _q;
-            Vector3 _temp_acc;
             Vector3 _accel_offset;
             Vector3 _gyro_offset;
             Vector3 _velocity;
             Vector3 _position;
-            Matrix3 _rotation_matrix;
-            
+            std::deque<Vector3> _samples;
     };
 }

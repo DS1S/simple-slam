@@ -1,5 +1,4 @@
-#ifndef QUATERNION_H
-#define QUATERNION_H
+#pragma once
 
 #include <math.h>
 
@@ -7,70 +6,76 @@
 
 #include "conversion.h"
 #include "tmatrix.h"
+#include "vector.h"
 
+namespace SimpleSlam::Math {
 class Quaternion {
-    double mData[4];
+   private:
+    double _mData[4];
 
    public:
     Quaternion() {
-        mData[0] = mData[1] = mData[2] = 0;
-        mData[3] = 1;
+        _mData[0] = _mData[1] = _mData[2] = 0;
+        _mData[3] = 1;
     }
 
-    Quaternion(const TVector3& v, double w) {
-        mData[0] = v.element(0, 0);
-        mData[1] = v.element(1, 0);
-        mData[2] = v.element(2, 0);
-        mData[3] = w;
-    }
-
-    Quaternion(const TVector4& v) {
-        mData[0] = v.element(0, 0);
-        mData[1] = v.element(1, 0);
-        mData[2] = v.element(2, 0);
-        mData[3] = v.element(3, 0);
+    Quaternion(const Vector3& v, double w) {
+        _mData[0] = v[0];
+        _mData[1] = v[1];
+        _mData[2] = v[2];
+        _mData[3] = w;
     }
 
     Quaternion(const double* array) {
         if (!array) {
-            // UAV_EXCEPTION("Constructing quaternion from 0 array.");
             std::cerr << "Constructing quaternion from 0 array." << std::endl;
         }
         for (uint32_t i = 0; i < 4; i++) {
-            mData[i] = array[i];
+            _mData[i] = array[i];
         }
     }
 
     Quaternion(double x, double y, double z, double w) {
-        mData[0] = x;
-        mData[1] = y;
-        mData[2] = z;
-        mData[3] = w;
+        _mData[0] = x;
+        _mData[1] = y;
+        _mData[2] = z;
+        _mData[3] = w;
     }
 
-    double x() const { return mData[0]; }
-    double y() const { return mData[1]; }
-    double z() const { return mData[2]; }
+    double x() const { return _mData[0]; }
+    double y() const { return _mData[1]; }
+    double z() const { return _mData[2]; }
     double w() const { return real(); }
 
-    TVector3 complex() const { return TVector3(mData); }
-    void complex(const TVector3& c) {
-        mData[0] = c[0];
-        mData[1] = c[1];
-        mData[2] = c[2];
+    Vector3 complex() const { return Vector3(_mData[0], _mData[1], _mData[2]); }
+    void complex(const Vector3& c) {
+        _mData[0] = c[0];
+        _mData[1] = c[1];
+        _mData[2] = c[2];
     }
 
-    double real() const { return mData[3]; }
-    void real(double r) { mData[3] = r; }
+    /**
+     * @brief Retrieve the scalar part of the quaternion.
+     *
+     * @return The scalar part of the quaternion.
+     */
+    double real() const { return _mData[3]; }
+    void real(double r) { _mData[3] = r; }
 
+    /**
+     * @brief Computes the axis-angle representation of the quaternion.
+     * 
+     * @return The quaternion formulated by the angle and axis of rotation.
+    */
     static Quaternion axis_angle_to_quat(const double& theta,
-                                         const TVector3& v) {
-        return Quaternion(v.element(0, 0) * sin(theta / 2),
-                          v.element(1, 0) * sin(theta / 2),
-                          v.element(2, 0) * sin(theta / 2), cos(theta / 2));
+                                         const Vector3& v) {
+        return Quaternion(v[0] * sin(theta / 2), v[1] * sin(theta / 2),
+                          v[2] * sin(theta / 2), cos(theta / 2));
     }
 
-    Quaternion conjugate(void) const { return Quaternion(-complex(), real()); }
+    Quaternion conjugate(void) const {
+        return Quaternion(complex() * -1, real());
+    }
 
     /**
      * @brief Computes the inverse of this quaternion.
@@ -161,54 +166,12 @@ class Quaternion {
     }
 
     /**
-     * @brief Returns a matrix representation of this
-     * quaternion.
-     *
-     * Specifically this is the matrix such that:
-     *
-     * this->matrix() * q.vector() = (*this) * q for any quaternion q.
-     *
-     * Note that this is @e NOT the rotation matrix that may be
-     * represented by a unit quaternion.
-     */
-    TMatrix4 matrix() const {
-        double m[16] = {w(),  -z(), y(), x(), z(),  w(),  -x(), y(),
-                        -y(), x(),  w(), z(), -x(), -y(), -z(), w()};
-        return TMatrix4(m);
-    }
-
-    /**
-     * @brief Returns a matrix representation of this
-     * quaternion for right multiplication.
-     *
-     * Specifically this is the matrix such that:
-     *
-     * q.vector().transpose() * this->matrix() = (q *
-     * (*this)).vector().transpose() for any quaternion q.
-     *
-     * Note that this is @e NOT the rotation matrix that may be
-     * represented by a unit quaternion.
-     */
-    TMatrix4 rightMatrix() const {
-        double m[16] = {+w(), -z(), y(), -x(), +z(), w(), -x(), -y(),
-                        -y(), x(),  w(), -z(), +x(), y(), z(),  w()};
-        return TMatrix4(m);
-    }
-
-    /**
-     * @brief Returns this quaternion as a 4-vector.
-     *
-     * This is simply the vector [x y z w]<sup>T</sup>
-     */
-    TVector4 vector() const { return TVector4(mData); }
-
-    /**
      * @brief Returns the norm ("magnitude") of the quaternion.
      * @return The 2-norm of [ w(), x(), y(), z() ]<sup>T</sup>.
      */
     double norm() const {
-        return sqrt(mData[0] * mData[0] + mData[1] * mData[1] +
-                    mData[2] * mData[2] + mData[3] * mData[3]);
+        return sqrt(_mData[0] * _mData[0] + _mData[1] * _mData[1] +
+                    _mData[2] * _mData[2] + _mData[3] * _mData[3]);
     }
 
     /**
@@ -230,52 +193,11 @@ class Quaternion {
     }
 
     /**
-     * @brief Returns the scaled-axis representation of this
-     * quaternion rotation.
-     */
-    // TVector3 scaledAxis(void) const {
-    //   double w[3];
-    //   HeliMath::scaled_axis_from_quaternion(w, mData);
-    //   return TVector3(w);
-    // }
-
-    /**
-     * @brief Sets quaternion to be same as rotation by scaled axis w.
-     */
-    void scaledAxis(const TVector3& w) {
-        double theta = w.norm();
-        if (theta > 0.0001) {
-            double s = sin(theta / 2.0);
-            TVector3 W(w / theta * s);
-            mData[0] = W[0];
-            mData[1] = W[1];
-            mData[2] = W[2];
-            mData[3] = cos(theta / 2.0);
-        } else {
-            mData[0] = mData[1] = mData[2] = 0;
-            mData[3] = 1.0;
-        }
-    }
-
-    /**
-     * @brief Returns a vector rotated by this quaternion.
-     *
-     * Functionally equivalent to:  (rotationMatrix() * v)
-     * or (q * Quaternion(0, v) * q.inverse()).
-     *
-     * @warning conjugate() is used instead of inverse() for better
-     * performance, when this quaternion must be normalized.
-     */
-    TVector3 rotatedVector(const TVector3& v) const {
-        return (((*this) * Quaternion(v, 0)) * conjugate()).complex();
-    }
-
-    /**
      * @brief Computes the quaternion that is equivalent to a given
      * euler angle rotation.
      * @param euler A 3-vector in order:  roll-pitch-yaw.
      */
-    void euler(const TVector3& euler) {
+    void euler(const Vector3& euler) {
         double c1 = cos(euler[2] * 0.5);
         double c2 = cos(euler[1] * 0.5);
         double c3 = cos(euler[0] * 0.5);
@@ -283,111 +205,37 @@ class Quaternion {
         double s2 = sin(euler[1] * 0.5);
         double s3 = sin(euler[0] * 0.5);
 
-        mData[0] = c1 * c2 * s3 - s1 * s2 * c3;
-        mData[1] = c1 * s2 * c3 + s1 * c2 * s3;
-        mData[2] = s1 * c2 * c3 - c1 * s2 * s3;
-        mData[3] = c1 * c2 * c3 + s1 * s2 * s3;
+        _mData[0] = c1 * c2 * s3 - s1 * s2 * c3;
+        _mData[1] = c1 * s2 * c3 + s1 * c2 * s3;
+        _mData[2] = s1 * c2 * c3 - c1 * s2 * s3;
+        _mData[3] = c1 * c2 * c3 + s1 * s2 * s3;
     }
 
     /** @brief Returns an equivalent euler angle representation of
      * this quaternion.
      * @return Euler angles in roll-pitch-yaw order.
      */
-    TVector3 euler(void) const {
-        TVector3 euler;
+    Vector3 euler(void) const {
         const static double PI_OVER_2 = SimpleSlam::Math::pi * 0.5;
-        const static double EPSILON = 1e-10;
         double sqw, sqx, sqy, sqz;
 
         // quick conversion to Euler angles to give tilt to user
-        sqw = mData[3] * mData[3];
-        sqx = mData[0] * mData[0];
-        sqy = mData[1] * mData[1];
-        sqz = mData[2] * mData[2];
+        sqw = _mData[3] * _mData[3];
+        sqx = _mData[0] * _mData[0];
+        sqy = _mData[1] * _mData[1];
+        sqz = _mData[2] * _mData[2];
 
-        euler[1] = asin(2.0 * (mData[3] * mData[1] - mData[0] * mData[2]));
-        if (PI_OVER_2 - fabs(euler[1]) > EPSILON) {
-            euler[2] = atan2(2.0 * (mData[0] * mData[1] + mData[3] * mData[2]),
-                             sqx - sqy - sqz + sqw);
-            euler[0] = atan2(2.0 * (mData[3] * mData[0] + mData[1] * mData[2]),
-                             sqw - sqx - sqy + sqz);
-        } else {
-            // compute heading from local 'down' vector
-            euler[2] = atan2(2 * mData[1] * mData[2] - 2 * mData[0] * mData[3],
-                             2 * mData[0] * mData[2] + 2 * mData[1] * mData[3]);
-            euler[0] = 0.0;
+        const double roll =
+            atan2(2.0 * (_mData[3] * _mData[0] + _mData[1] * _mData[2]),
+                  1 - 2 * (sqx + sqy));
+        const double pitch =
+            asin(2.0 * (_mData[3] * _mData[1] - _mData[0] * _mData[2]));
+        const double yaw =
+            atan2(2.0 * (_mData[0] * _mData[1] + _mData[3] * _mData[2]),
+                  1 - 2 * (sqy + sqz));
 
-            // If facing down, reverse yaw
-            if (euler[1] < 0) euler[2] = SimpleSlam::Math::pi - euler[2];
-        }
+        Vector3 euler(roll, pitch, yaw);
         return euler;
     }
-
-    /**
-     * @brief Computes a special representation that decouples the Z
-     * rotation.
-     *
-     * The decoupled representation is two rotations, Qxy and Qz,
-     * so that Q = Qxy * Qz.
-     */
-    //   void decoupleZ(Quaternion* Qxy, Quaternion* Qz) const {
-    //       TVector3 ztt(0,0,1);
-    //       TVector3 zbt = this->rotatedVector(ztt);
-    //       TVector3 axis_xy = ztt.cross(zbt);
-    //       double axis_norm = axis_xy.norm();
-
-    //       double axis_theta = acos(HeliMath::saturate(zbt[2], -1,+1));
-    //       if (axis_norm > 0.00001) {
-    //         axis_xy = axis_xy * (axis_theta/axis_norm); // limit is *1
-    //       }
-
-    //       Qxy->scaledAxis(axis_xy);
-    //       *Qz = (Qxy->conjugate() * (*this));
-    //   }
-
-    /**
-     * @brief Returns the quaternion slerped between this and q1 by fraction 0
-     * <= t <= 1.
-     */
-    //   Quaternion slerp(const Quaternion& q1, double t) {
-    //     return slerp(*this, q1, t);
-    //   }
-
-    /// Returns quaternion that is slerped by fraction 't' between q0 and q1.
-    //   static Quaternion slerp(const Quaternion& q0, const Quaternion& q1,
-    //   double t) {
-
-    //     double omega = acos(HeliMath::saturate(q0.mData[0]*q1.mData[0] +
-    //                                            q0.mData[1]*q1.mData[1] +
-    //                                            q0.mData[2]*q1.mData[2] +
-    //                                            q0.mData[3]*q1.mData[3],
-    //                                            -1,1));
-    //     if (fabs(omega) < 1e-10) {
-    //       omega = 1e-10;
-    //     }
-    //     double som = sin(omega);
-    //     double st0 = sin((1-t) * omega) / som;
-    //     double st1 = sin(t * omega) / som;
-
-    //     return Quaternion(q0.mData[0]*st0 + q1.mData[0]*st1,
-    //                       q0.mData[1]*st0 + q1.mData[1]*st1,
-    //                       q0.mData[2]*st0 + q1.mData[2]*st1,
-    //                       q0.mData[3]*st0 + q1.mData[3]*st1);
-    //   }
-
-    /**
-     * @brief Returns pointer to the internal array.
-     *
-     * Array is in order x,y,z,w.
-     */
-    double* row(uint32_t i) { return mData + i; }
-    // Const version of the above.
-    const double* row(uint32_t i) const { return mData + i; }
 };
-
-/**
- * @brief Global operator allowing left-multiply by scalar.
- */
-Quaternion operator*(double s, const Quaternion& q);
-
-#endif /* QUATERNION_H */
+}  // namespace SimpleSlam::Math
