@@ -8,9 +8,6 @@
 SimpleSlam::Math::Vector3::Vector3(double x, double y, double z)
     : _x{x}, _y{y}, _z{z} {}
 
-// SimpleSlam::Math::Vector3::Vector3(const Vector3& other)
-//     : _x{other._x}, _y{other._y}, _z{other._z} {}
-
 double SimpleSlam::Math::Vector3::dot(const Vector3& other) const {
     return _x * other._x + _y * other._y + _z * other._z;
 }
