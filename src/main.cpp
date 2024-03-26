@@ -1,5 +1,6 @@
 #include "ISM43362Interface.h"
 #include "WiFiInterface.h"
+#include "calibration.h"
 #include "car.h"
 #include "data/header.h"
 #include "data/json.h"
@@ -14,298 +15,198 @@
 #include "math/quaternion.h"
 #include "mbed.h"
 
-typedef struct {
-    int16_t minX;
-    int16_t maxX;
-    int16_t minY;
-    int16_t maxY;
-    int16_t minZ;
-    int16_t maxZ;
-} offset_vars;
+SimpleSlam::CalibrationStep current_calibration_step(
+    SimpleSlam::CalibrationStep::MAGNETOMETER);
 
-void test_http_client() {
-    std::unique_ptr<WiFiInterface> wifi = std::make_unique<ISM43362Interface>();
-    SimpleSlam::HttpClient http_client(std::move(wifi));
-    http_client.init();
-    auto status = http_client.get_request("api.restful-api.dev", "/objects/7");
-    if (status.has_value()) {
-        printf(status.value().second.c_str());
-    } else {
-        printf("[HttpClient]: GET Succeeded\n");
-    }
+SimpleSlam::calibration_data_t calibration_data{
+    .magnetometer_calibration_data = {},
+    .gyro_offset = {0, 0, 0},
+    .accel_offset = {0, 0, 0}};
 
-    SimpleSlam::JSON body_data;
-    body_data.add("value", 1);
-    SimpleSlam::JSON post_body;
-    post_body.add("name", "testobject100").add("data", body_data);
+InterruptIn calibration_button(BUTTON1);
+DigitalOut calibration_indicator_led(LED1);
 
-    status =
-        http_client.post_request("api.restful-api.dev", "/objects", post_body);
-    if (status.has_value()) {
-        printf(status.value().second.c_str());
-    } else {
-        printf("[HttpClient]: POST Succeeded\n");
-    }
+EventQueue calibration_event_queue;
+EventQueue sensor_event_queue;
+
+void update_intertial_navigation_system(
+    SimpleSlam::Math::InertialNavigationSystem* inertial_navigation_system) {
+    int16_t accel_buffer[3];
+    int16_t gyro_buffer[3];
+    int16_t magno_buffer[3];
+
+    SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
+    SimpleSlam::LSM6DSL::Gyro_Read(gyro_buffer);
+    SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],
+                                 magno_buffer[2]);
+
+    SimpleSlam::Math::Vector3 temp_accel(accel_buffer[0], accel_buffer[1],
+                                         accel_buffer[2]);
+    SimpleSlam::Math::Vector3 temp_ang(gyro_buffer[0], gyro_buffer[1],
+                                       gyro_buffer[2]);
+    SimpleSlam::Math::Vector3 temp_magno(magno_buffer[0], magno_buffer[1],
+                                         magno_buffer[2]);
+
+    SimpleSlam::Math::Vector3 calibrated_magnet =
+        SimpleSlam::Math::Adjust_Magnetometer_Vector(
+            temp_magno, calibration_data.magnetometer_calibration_data)
+            .normalize();
+
+    SimpleSlam::Math::Vector3 t = temp_accel / 1000;
+    SimpleSlam::Math::Vector3 p = (temp_ang * SimpleSlam::Math::pi / 180000);
+    inertial_navigation_system->add_sample((temp_accel / 1000) * 9.8);
+    inertial_navigation_system->update_position(p, t, calibrated_magnet);
+}
+
+void calculate_spatial_point(
+    SimpleSlam::Math::InertialNavigationSystem* inertial_navigation_system) {
+    int16_t accel_buffer[3];
+    int16_t magno_buffer[3];
+
+    SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
+    SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],
+                                 magno_buffer[2]);
+
+    SimpleSlam::Math::Vector3 temp_accel(accel_buffer[0], accel_buffer[1],
+                                         accel_buffer[2]);
+
+    SimpleSlam::Math::Vector3 temp_magno(magno_buffer[0], magno_buffer[1],
+                                         magno_buffer[2]);
+
+    SimpleSlam::Math::Vector3 adjusted_magno(
+        SimpleSlam::Math::Adjust_Magnetometer_Vector(
+            temp_magno, calibration_data.magnetometer_calibration_data));
+
+    uint16_t tof_distance = 0;
+    SimpleSlam::VL53L0X::Perform_Single_Shot_Read(tof_distance);
+
+    // Convert ToF distance to cm.
+    tof_distance /= 10;
+
+    SimpleSlam::Math::Vector3 north_vector(adjusted_magno.normalize());
+    SimpleSlam::Math::Vector3 up_vector(temp_accel.normalize());
+    SimpleSlam::Math::Vector3 tof_vector(0, 0, 1);
+    SimpleSlam::Math::Vector2 tof_direction_vector =
+        SimpleSlam::Math::Convert_Tof_Direction_Vector(
+            north_vector, up_vector, tof_vector);
+    SimpleSlam::Math::Vector2 mapped_point =
+        SimpleSlam::Math::Convert_To_Spatial_Point(
+            tof_direction_vector.normalize(), tof_distance);
 }
 
 int main() {
     printf("Starting Simple-Slam\n");
 
-    SimpleSlam::JSON my_data;
-    my_data.add("age", 1)
-        .add("hair", "brown")
-        .add_list<float>("points", {3.1, 2, 2.1, 4});
-
-    std::string my_data_str = my_data.build();
-    printf("My Data: %s \n", my_data_str.c_str());
-
-    SimpleSlam::LIS3MDL::LIS3MDL_Config_t config{
-        .output_rate = LOPTS_OUTPUT_RATE_80_HZ,  // 80 Hz
-        .full_scale = LOPTS_FULL_SCALE_4_GAUSS,  // 4 gauss
-        .bdu = 0,                                // Block data update off
-    };
+    // Turn off LED to show no current calibration step is occuring.
+    calibration_indicator_led = 0;
 
     SimpleSlam::VL53L0X::VL53L0X_Config_t tof_config{
         .is_voltage_2v8_mode = true,
     };
 
+    SimpleSlam::LIS3MDL::LIS3MDL_Config_t magno_config{
+        .output_rate = LOPTS_OUTPUT_RATE_80_HZ,
+        .full_scale = LOPTS_FULL_SCALE_4_GAUSS,
+        .bdu = 0,
+    };
+
+    // Initialize I2C communication and all the sensors needed.
     SimpleSlam::I2C_Init();
+    SimpleSlam::LIS3MDL::Init(magno_config);
+    SimpleSlam::VL53L0X::Init(tof_config);
     SimpleSlam::LSM6DSL::Accel_Init();
     SimpleSlam::LSM6DSL::Gyro_Init();
-    SimpleSlam::LIS3MDL::Init(config);
-    SimpleSlam::VL53L0X::Init(tof_config);
 
-    int16_t accel_buffer[3];
-    int16_t gyro_buffer[3];
-    int16_t magno_buffer[3];
-    uint16_t tof_distance = 0;
+    // Set timing budget to 19ms for ToF, allows for feasible schedule
+    SimpleSlam::VL53L0X::Set_Measurement_Timing_Budget(19000);
 
-    CarHardwareInterface car;
-    car.init();
+    SimpleSlam::calibration_args_t calibration_args{
+        .event_queue = &calibration_event_queue,
+        .calibration_data = &calibration_data,
+        .current_calibration_step = &current_calibration_step,
+        .indicator_led = &calibration_indicator_led};
 
-    while (false) {
-        SimpleSlam::LSM6DSL::Gyro_Read(gyro_buffer);
-        SimpleSlam::Math::Vector3 gyro(gyro_buffer[0], gyro_buffer[1],
-                                       gyro_buffer[2]);
-        printf("GYRO %s\n", gyro.to_string().c_str());
-        ThisThread::sleep_for(1s);
-    }
+    calibration_button.fall(calibration_event_queue.event(callback(
+        SimpleSlam::Handle_Calibration_Step_Change, &calibration_args)));
 
-    std::vector<SimpleSlam::Math::Vector3> readings;
-    for (int i = 0; i < 200; i++) {
-        SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],
-                                     magno_buffer[2]);
-        SimpleSlam::Math::Vector3 temp_magno(magno_buffer[0], magno_buffer[1],
-                                             magno_buffer[2]);
-        readings.push_back(temp_magno);
-        ThisThread::sleep_for(100ms);
-    }
+    // Once all calibration steps are gone through,
+    // this event queue will breakout
+    calibration_event_queue.dispatch_forever();
 
-    SimpleSlam::Math::magnetometer_calibration_t calibration_data =
-        SimpleSlam::Math::Fill_Magnetometer_Calibration_Data(readings);
+    printf("Completed Calibration\n");
 
-    printf("%f %f %f %f %f %f\n", calibration_data.offset_x,
-           calibration_data.offset_y, calibration_data.offset_z,
-           calibration_data.scale_x, calibration_data.scale_y,
-           calibration_data.scale_z);
-
-    // Thread t;
-    // t.start(test_http_client);    
-
-    int16_t i = 0;
-    SimpleSlam::Math::Vector3 gyro_offset(0, 0, 0);
-    SimpleSlam::Math::Vector3 accel_offset(0, 0, 0);
-    const int num_samples = 500;
-    printf("Calibrating Gyro + Accel\n");
-    while (i < num_samples) {
-        SimpleSlam::LSM6DSL::Gyro_Read(gyro_buffer);
-        SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
-
-        const SimpleSlam::Math::Vector3 temp_accel(
-            accel_buffer[0], accel_buffer[1], accel_buffer[2]);
-        const SimpleSlam::Math::Vector3 temp_ang(gyro_buffer[0], gyro_buffer[1],
-                                                 gyro_buffer[2]);
-        gyro_offset = gyro_offset + temp_ang;
-        accel_offset = accel_offset + temp_accel;
-        i++;
-        ThisThread::sleep_for(20ms);
-    }
-    gyro_offset = gyro_offset / num_samples;
-    accel_offset = accel_offset / num_samples;
-
-    gyro_offset = gyro_offset * SimpleSlam::Math::pi / 180000;
-    accel_offset = accel_offset / 1000;
-    printf("Calibrated Gyro Offset: %s\n", gyro_offset.to_string().c_str());
-    printf("Calibrated Accel Offset: %s\n", accel_offset.to_string().c_str());
-    SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],
-                                 magno_buffer[2]);
-    SimpleSlam::Math::Vector3 temp_magno(magno_buffer[0], magno_buffer[1], 0);
-    temp_magno = temp_magno.normalize();
-
-    const SimpleSlam::Math::Vector3 temp_accel(accel_buffer[0], accel_buffer[1],
-                                               accel_buffer[2]);
-    SimpleSlam::Math::InertialNavigationSystem ins(
-        0.01, temp_magno, accel_offset, gyro_offset,
+    SimpleSlam::Math::InertialNavigationSystem inertial_navigation_system(
+        0.022, SimpleSlam::Math::Vector3(0, 0, 0),
+        calibration_data.accel_offset, calibration_data.gyro_offset,
         SimpleSlam::Math::Vector3(0, 0, 0), SimpleSlam::Math::Vector3(0, 0, 0));
 
-    for (int i = 0; i < 8; i++) {
-        SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
-        SimpleSlam::Math::Vector3 temp_accel(accel_buffer[0], accel_buffer[1],
-                                             accel_buffer[2]);
-        SimpleSlam::Math::Vector3 t = temp_accel / 1000;
-        t = t.normalize();
+    sensor_event_queue.call_every(22ms,
+                                  callback(update_intertial_navigation_system,
+                                           &inertial_navigation_system));
+    sensor_event_queue.call_every(
+        40ms, callback(calculate_spatial_point, &inertial_navigation_system));
 
-        ins.add_sample(t);
-    }
-
-    while (true) {
-        SimpleSlam::Math::Vector3 pos = ins.get_position();
-        // printf("POS: %s\n", pos.to_string().c_str());
-
-        SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
-        SimpleSlam::LSM6DSL::Gyro_Read(gyro_buffer);
-        SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],
-                                     magno_buffer[2]);
-
-        SimpleSlam::Math::Vector3 temp_accel(accel_buffer[0], accel_buffer[1],
-                                             accel_buffer[2]);
-        SimpleSlam::Math::Vector3 temp_ang(gyro_buffer[0], gyro_buffer[1],
-                                           gyro_buffer[2]);
-        SimpleSlam::Math::Vector3 temp_magno(magno_buffer[0], magno_buffer[1],
-                                             magno_buffer[2]);
-
-        SimpleSlam::Math::Vector3 calibrated_magnet =
-            SimpleSlam::Math::Adjust_Magnetometer_Vector(temp_magno,
-                                                         calibration_data)
-                .normalize();
-
-        SimpleSlam::Math::Vector3 t = temp_accel / 1000;
-        SimpleSlam::Math::Vector3 p =
-            (temp_ang * SimpleSlam::Math::pi / 180000);
-        ins.add_sample((temp_accel / 1000) * 9.8);
-
-        ins.update_position(p, t, calibrated_magnet);
-        ThisThread::sleep_for(10ms);
-    }
-
-    while (false) {
-        SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
-        SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],
-                                     magno_buffer[2]);
-        SimpleSlam::Math::Vector3 temp_accel(accel_buffer[0], accel_buffer[1],
-                                             accel_buffer[2]);
-
-        SimpleSlam::Math::Vector3 temp_magno(magno_buffer[0], magno_buffer[1],
-                                             magno_buffer[2]);
-
-        SimpleSlam::Math::Vector3 adjusted_magno(
-            SimpleSlam::Math::Adjust_Magnetometer_Vector(temp_magno,
-                                                         calibration_data));
-
-        SimpleSlam::VL53L0X::Perform_Single_Shot_Read(tof_distance);
-        tof_distance /= 10;
-
-        SimpleSlam::Math::Vector3 north_vector(adjusted_magno.normalize());
-        SimpleSlam::Math::Vector3 up_vector(temp_accel.normalize());
-        SimpleSlam::Math::Vector3 tof_vector(0, 0, 1);
-        SimpleSlam::Math::Vector2 tof_direction_vector =
-            SimpleSlam::Math::Convert_Tof_Direction_Vector(
-                north_vector, up_vector, tof_vector);
-        SimpleSlam::Math::Vector2 mapped_point =
-            SimpleSlam::Math::Convert_To_Spatial_Point(
-                tof_direction_vector.normalize(), tof_distance);
-
-        printf("TOF SENSOR DISTANCE: %dcm\n", tof_distance);
-        printf("ACCELEROMETER (x, y, z) = (%d mg, %d mg, %d mg)\n",
-               accel_buffer[0], accel_buffer[1], accel_buffer[2]);
-        printf("MAGNETOMETER (x, y, z) = (%d mg, %d mg, %d mg)\n",
-               magno_buffer[0], magno_buffer[1], magno_buffer[2]);
-        // printf("Direction Vector: %s, %f\n",
-        //        tof_direction_vector.normalize().to_string().c_str(),
-        //        tof_direction_vector.normalize().to_string().c_str());
-        printf("Spatial Vector: %s\n", mapped_point.to_string().c_str());
-
-        if (tof_distance > 25) {
-            car.move_forward();
-        } else {
-            // Stop for a second and smile :D
-            car.stop();
-            ThisThread::sleep_for(1s);
-
-            // Pick a random direction
-            if (rand() % 2 == 0) {
-                car.turn_left();
-                ThisThread::sleep_for(750ms);
-            } else {
-                car.turn_right();
-                ThisThread::sleep_for(750ms);
-            }
-        }
-
-        ThisThread::sleep_for(250ms);
-    }
+    sensor_event_queue.dispatch_forever();
 
     return 0;
 }
 
-int test_magetometer() {
-    SimpleSlam::LIS3MDL::LIS3MDL_Config_t config{
-        .output_rate = LOPTS_OUTPUT_RATE_80_HZ,  // 80 Hz
-        .full_scale = LOPTS_FULL_SCALE_4_GAUSS,  // 4 gauss
-        .bdu = 0,                                // Block data update off
-    };
+// CarHardwareInterface car;
+// car.init();
 
-    auto result = SimpleSlam::LIS3MDL::Init(config);
-    if (result.has_value()) {
-        printf("Result: %s\n", result.value().second.c_str());
-    }
+// while (false) {
+//     SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
+//     SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],
+//                                  magno_buffer[2]);
+//     SimpleSlam::Math::Vector3 temp_accel(accel_buffer[0], accel_buffer[1],
+//                                          accel_buffer[2]);
 
-    int16_t x = 0;
-    int16_t y = 0;
-    int16_t z = 0;
+//     SimpleSlam::Math::Vector3 temp_magno(magno_buffer[0], magno_buffer[1],
+//                                          magno_buffer[2]);
 
-    offset_vars data{
-        .minX = 999,
-        .maxX = -999,
-        .minY = 999,
-        .maxY = -999,
-        .minZ = 999,
-        .maxZ = -999,
-    };
+//     SimpleSlam::Math::Vector3 adjusted_magno(
+//         SimpleSlam::Math::Adjust_Magnetometer_Vector(temp_magno,
+//                                                      calibration_data));
 
-    while (true) {
-        SimpleSlam::LIS3MDL::ReadXYZ(x, y, z);
+//     SimpleSlam::VL53L0X::Perform_Single_Shot_Read(tof_distance);
+//     tof_distance /= 10;
 
-        int16_t offsetX = (data.maxX - data.minX) / 2;
-        int16_t offsetY = (data.maxY - data.minY) / 2;
-        int16_t offsetZ = (data.maxZ - data.minZ) / 2;
+//     SimpleSlam::Math::Vector3 north_vector(adjusted_magno.normalize());
+//     SimpleSlam::Math::Vector3 up_vector(temp_accel.normalize());
+//     SimpleSlam::Math::Vector3 tof_vector(0, 0, 1);
+//     SimpleSlam::Math::Vector2 tof_direction_vector =
+//         SimpleSlam::Math::Convert_Tof_Direction_Vector(
+//             north_vector, up_vector, tof_vector);
+//     SimpleSlam::Math::Vector2 mapped_point =
+//         SimpleSlam::Math::Convert_To_Spatial_Point(
+//             tof_direction_vector.normalize(), tof_distance);
 
-        double headingRadians = std::atan2(
-            y + offsetY, z + offsetZ);  // Calculate heading in radians
-        double headingDegrees =
-            headingRadians * (180.0 / 3.14);  // Convert to degrees
+//     printf("TOF SENSOR DISTANCE: %dcm\n", tof_distance);
+//     printf("ACCELEROMETER (x, y, z) = (%d mg, %d mg, %d mg)\n",
+//            accel_buffer[0], accel_buffer[1], accel_buffer[2]);
+//     printf("MAGNETOMETER (x, y, z) = (%d mg, %d mg, %d mg)\n",
+//            magno_buffer[0], magno_buffer[1], magno_buffer[2]);
+//     // printf("Direction Vector: %s, %f\n",
+//     //        tof_direction_vector.normalize().to_string().c_str(),
+//     //        tof_direction_vector.normalize().to_string().c_str());
+//     printf("Spatial Vector: %s\n", mapped_point.to_string().c_str());
 
-        // Ensure the heading is between 0-360 degrees
-        if (headingDegrees < 0) {
-            headingDegrees += 360;
-        }
+//     if (tof_distance > 25) {
+//         car.move_forward();
+//     } else {
+//         // Stop for a second and smile :D
+//         car.stop();
+//         ThisThread::sleep_for(1s);
 
-        printf("Heading: %i (X: %d, Y: %d, Z: %d)\n", (int)headingDegrees,
-               x + offsetX, y + offsetY, z + offsetZ);
-        printf("Min: X: %d, Y: %d, Z: %d\n", data.minX, data.minY, data.minZ);
-        printf("Max: X: %d, Y: %d, Z: %d\n", data.maxX, data.maxY, data.maxZ);
-        printf("--------------------\n");
+//         // Pick a random direction
+//         if (rand() % 2 == 0) {
+//             car.turn_left();
+//             ThisThread::sleep_for(750ms);
+//         } else {
+//             car.turn_right();
+//             ThisThread::sleep_for(750ms);
+//         }
+//     }
 
-        // Calibrate readings
-        data.minX = std::min(data.minX, x);
-        data.maxX = std::max(data.maxX, x);
-        data.minY = std::min(data.minY, y);
-        data.maxY = std::max(data.maxY, y);
-        data.minZ = std::min(data.minZ, z);
-        data.maxZ = std::max(data.maxZ, z);
-
-        ThisThread::sleep_for(300ms);
-    }
-
-    return 0;
-}
+//     ThisThread::sleep_for(250ms);
+// }
