@@ -50,6 +50,15 @@ std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Gyro_Init() {
         ctrl_2
     );
     RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, "Failed to write to Ctrl 2");
+    
+    // CTRL3 Gyroscope Options: LPF1
+    uint8_t ctrl_3 = GYRO_BDU | GYRO_IF_INC;
+    status = I2C_Mem_Write_Single(
+        I2C_ADDRESS,
+        CTRL_3_REG,
+        ctrl_3
+    );
+    RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, "Failed to write to Ctrl 3");
 
     // CTRL6 Gyroscope Options: low-pass filter
     uint8_t ctrl_6 = GYRO_LOW_PASS_BANDWIDTH;
@@ -118,12 +127,12 @@ std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Gyro_DeInit() {
     return {};
 }
 
-std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Accel_Read_Raw(int16_t* buffer) {
+std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Accel_Read_Raw(uint8_t* buffer) {
     HAL_StatusTypeDef status = I2C_Mem_Read(
         I2C_ADDRESS,
         ACCEL_READ_REG_X_LOW,
         1,
-        (uint8_t*) buffer,
+        buffer,
         ACCEL_BUFFER_SIZE
     );
     RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, "Failed to Read Accelerometer Data");
@@ -131,20 +140,20 @@ std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Accel_Read_Raw(
 }
 
 std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Accel_Read(int16_t* buffer) {
-    auto maybe_error = Accel_Read_Raw(buffer);
+    auto maybe_error = Accel_Read_Raw((uint8_t*)buffer);
     RETURN_IF_CONTAINS_ERROR(maybe_error);
     for (int i = 0; i < 3; i++) {
-        buffer[i] = buffer[i] * ACCEL_SENSITIVITY;
+        buffer[i] = (int16_t)(buffer[i] * ACCEL_SENSITIVITY);
     }
     return {};
 }
 
-std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Gyro_Read_Raw(int16_t* buffer) {
+std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Gyro_Read_Raw(uint8_t* buffer) {
     HAL_StatusTypeDef status = I2C_Mem_Read(
         I2C_ADDRESS,
         GYRO_READ_REG_X_LOW,
         1,
-        (uint8_t*) buffer,
+        buffer,
         GYRO_BUFFER_SIZE
     );
     RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, "Failed to Read Gyroscope Data");
@@ -152,10 +161,11 @@ std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Gyro_Read_Raw(i
 }
 
 std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Gyro_Read(int16_t* buffer) {
-    auto maybe_error = Gyro_Read_Raw(buffer);
+    auto maybe_error = Gyro_Read_Raw((uint8_t *)buffer);
     RETURN_IF_CONTAINS_ERROR(maybe_error);
     for (int i = 0; i < 3; i++) {
-        buffer[i] = buffer[i] * GYRO_SENSITIVITY;
+        buffer[i] = (int16_t)(buffer[i] * GYRO_SENSITIVITY);
     }
+
     return {};
 }

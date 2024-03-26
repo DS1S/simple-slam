@@ -1,4 +1,5 @@
 #pragma once
+
 #include <string>
 
 namespace SimpleSlam::Math {
@@ -9,8 +10,11 @@ class Vector3 {
     double dot(const Vector3& other) const;
     Vector3 cross(const Vector3& other) const;
     Vector3 normalize() const;
-    Vector3 operator*(double scalar) const;
-    Vector3 operator/(double scalar) const;
+    double operator[](const size_t& index) const;
+    Vector3 operator*(const double& scalar) const;
+    Vector3 operator/(const double& scalar) const;
+    Vector3 operator+(const Vector3& other) const;
+    Vector3 operator-(const Vector3& other) const;
     double magnitude() const;
     double get_x() const;
     double get_y() const;
@@ -18,9 +22,9 @@ class Vector3 {
     std::string to_string() const;
 
    private:
-    const double _x{0};
-    const double _y{0};
-    const double _z{0};
+    double _x{0};
+    double _y{0};
+    double _z{0};
 };
 
 class Vector2 {
@@ -37,8 +41,8 @@ class Vector2 {
     std::string to_string() const;
 
    private:
-    const double _x{0};
-    const double _y{0};
+    double _x{0};
+    double _y{0};
 };
 
 }  // namespace SimpleSlam::Math

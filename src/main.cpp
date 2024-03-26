@@ -8,7 +8,10 @@
 #include "driver/lsm6dsl.h"
 #include "driver/vl53l0x.h"
 #include "http_client/http_client.h"
+#include "math.h"
 #include "math/conversion.h"
+#include "math/inertial_navigation.h"
+#include "math/quaternion.h"
 #include "mbed.h"
 
 typedef struct {
@@ -89,7 +92,7 @@ int main() {
     }
 
     std::vector<SimpleSlam::Math::Vector3> readings;
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 200; i++) {
         SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],
                                      magno_buffer[2]);
         SimpleSlam::Math::Vector3 temp_magno(magno_buffer[0], magno_buffer[1],
@@ -101,9 +104,91 @@ int main() {
     SimpleSlam::Math::magnetometer_calibration_t calibration_data =
         SimpleSlam::Math::Fill_Magnetometer_Calibration_Data(readings);
 
-    Thread t;
-    t.start(test_http_client);
+    printf("%f %f %f %f %f %f\n", calibration_data.offset_x,
+           calibration_data.offset_y, calibration_data.offset_z,
+           calibration_data.scale_x, calibration_data.scale_y,
+           calibration_data.scale_z);
+
+    // Thread t;
+    // t.start(test_http_client);    
+
+    int16_t i = 0;
+    SimpleSlam::Math::Vector3 gyro_offset(0, 0, 0);
+    SimpleSlam::Math::Vector3 accel_offset(0, 0, 0);
+    const int num_samples = 500;
+    printf("Calibrating Gyro + Accel\n");
+    while (i < num_samples) {
+        SimpleSlam::LSM6DSL::Gyro_Read(gyro_buffer);
+        SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
+
+        const SimpleSlam::Math::Vector3 temp_accel(
+            accel_buffer[0], accel_buffer[1], accel_buffer[2]);
+        const SimpleSlam::Math::Vector3 temp_ang(gyro_buffer[0], gyro_buffer[1],
+                                                 gyro_buffer[2]);
+        gyro_offset = gyro_offset + temp_ang;
+        accel_offset = accel_offset + temp_accel;
+        i++;
+        ThisThread::sleep_for(20ms);
+    }
+    gyro_offset = gyro_offset / num_samples;
+    accel_offset = accel_offset / num_samples;
+
+    gyro_offset = gyro_offset * SimpleSlam::Math::pi / 180000;
+    accel_offset = accel_offset / 1000;
+    printf("Calibrated Gyro Offset: %s\n", gyro_offset.to_string().c_str());
+    printf("Calibrated Accel Offset: %s\n", accel_offset.to_string().c_str());
+    SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],
+                                 magno_buffer[2]);
+    SimpleSlam::Math::Vector3 temp_magno(magno_buffer[0], magno_buffer[1], 0);
+    temp_magno = temp_magno.normalize();
+
+    const SimpleSlam::Math::Vector3 temp_accel(accel_buffer[0], accel_buffer[1],
+                                               accel_buffer[2]);
+    SimpleSlam::Math::InertialNavigationSystem ins(
+        0.01, temp_magno, accel_offset, gyro_offset,
+        SimpleSlam::Math::Vector3(0, 0, 0), SimpleSlam::Math::Vector3(0, 0, 0));
+
+    for (int i = 0; i < 8; i++) {
+        SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
+        SimpleSlam::Math::Vector3 temp_accel(accel_buffer[0], accel_buffer[1],
+                                             accel_buffer[2]);
+        SimpleSlam::Math::Vector3 t = temp_accel / 1000;
+        t = t.normalize();
+
+        ins.add_sample(t);
+    }
+
     while (true) {
+        SimpleSlam::Math::Vector3 pos = ins.get_position();
+        // printf("POS: %s\n", pos.to_string().c_str());
+
+        SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
+        SimpleSlam::LSM6DSL::Gyro_Read(gyro_buffer);
+        SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],
+                                     magno_buffer[2]);
+
+        SimpleSlam::Math::Vector3 temp_accel(accel_buffer[0], accel_buffer[1],
+                                             accel_buffer[2]);
+        SimpleSlam::Math::Vector3 temp_ang(gyro_buffer[0], gyro_buffer[1],
+                                           gyro_buffer[2]);
+        SimpleSlam::Math::Vector3 temp_magno(magno_buffer[0], magno_buffer[1],
+                                             magno_buffer[2]);
+
+        SimpleSlam::Math::Vector3 calibrated_magnet =
+            SimpleSlam::Math::Adjust_Magnetometer_Vector(temp_magno,
+                                                         calibration_data)
+                .normalize();
+
+        SimpleSlam::Math::Vector3 t = temp_accel / 1000;
+        SimpleSlam::Math::Vector3 p =
+            (temp_ang * SimpleSlam::Math::pi / 180000);
+        ins.add_sample((temp_accel / 1000) * 9.8);
+
+        ins.update_position(p, t, calibrated_magnet);
+        ThisThread::sleep_for(10ms);
+    }
+
+    while (false) {
         SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
         SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],
                                      magno_buffer[2]);
@@ -135,9 +220,9 @@ int main() {
                accel_buffer[0], accel_buffer[1], accel_buffer[2]);
         printf("MAGNETOMETER (x, y, z) = (%d mg, %d mg, %d mg)\n",
                magno_buffer[0], magno_buffer[1], magno_buffer[2]);
-        printf("Direction Vector: %s, %f\n",
-               tof_direction_vector.normalize().to_string().c_str(),
-               tof_direction_vector.normalize());
+        // printf("Direction Vector: %s, %f\n",
+        //        tof_direction_vector.normalize().to_string().c_str(),
+        //        tof_direction_vector.normalize().to_string().c_str());
         printf("Spatial Vector: %s\n", mapped_point.to_string().c_str());
 
         if (tof_distance > 25) {
