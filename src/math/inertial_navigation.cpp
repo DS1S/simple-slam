@@ -5,6 +5,7 @@
 #include "mbed.h"
 #include "math/inertial_navigation.h"
 #include "math/quaternion.h"
+#include "math/conversion.h"
 #include "math/vector.h"
 
 SimpleSlam::Math::InertialNavigationSystem::InertialNavigationSystem(
@@ -44,7 +45,7 @@ void SimpleSlam::Math::InertialNavigationSystem::update_position(
     // Tilt Correction
     Quaternion q_a_body(force[0], force[1], force[2], 0);
     q_a_body = q_a_body / q_a_body.norm();
-    const Quaternion q_a_world = rot * q_a_body * rot.inverse();
+    const Quaternion q_a_world = rot * q_a_body * rot.conjugate();
     const Vector3 v = q_a_world.complex().normalize();
 
     const double denom = sqrt(v[0] * v[0] + v[1] * v[1]);
@@ -59,14 +60,14 @@ void SimpleSlam::Math::InertialNavigationSystem::update_position(
 
     // Yaw Correction w/ Magnetometer
     const Quaternion mag_body(magno[0], magno[1], magno[2], 0);
-    const Quaternion magno_world = rot_c * mag_body * rot_c.inverse();
+    const Quaternion magno_world = rot_c * mag_body * rot_c.conjugate();
     const Vector3 mag = Vector3(magno_world.x(), magno_world.y(), 0).normalize();
 
     const int signum = mag[1] == 0 ? 0 : mag[1] > 0 ? 1 : -1;
-    const Vector3 north = mag.cross(Vector3(1, 0, 0));
+    const Vector3 north(0,0, -1 * signum);
     const double gamma = std::atan2(abs(mag[1]), mag[0]);
     Quaternion rot_c2 =
-        Quaternion::axis_angle_to_quat(0.1 * gamma, north / north.magnitude());
+        Quaternion::axis_angle_to_quat(0.05 * gamma, north / north.magnitude());
 
     rot_c2 = rot_c2 / rot_c2.norm();
     rot_c2 = rot_c2 * rot_c;
@@ -74,7 +75,7 @@ void SimpleSlam::Math::InertialNavigationSystem::update_position(
 
     // Rotate force in body frame into local frame
     const Quaternion q_u_body(force[0], force[1], force[2], 0);
-    const Quaternion q_u_world = rot_c2 * q_u_body * rot_c2.inverse();
+    const Quaternion q_u_world = rot_c2 * q_u_body * rot_c2.conjugate();
     const Vector3 world_force = q_u_world.complex() - _accel_offset;
 
     // Set rotation to our newly corrected quaternion

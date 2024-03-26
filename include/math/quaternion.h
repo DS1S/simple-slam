@@ -10,7 +10,7 @@
 namespace SimpleSlam::Math {
 class Quaternion {
    private:
-    double _mData[4];
+    double _data[4];
 
    public:
     static Quaternion axis_angle_to_quat(const double& theta, const Vector3& v);

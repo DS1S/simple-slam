@@ -60,15 +60,6 @@ std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Gyro_Init() {
     );
     RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, "Failed to write to Ctrl 3");
 
-    // CTRL4 Gyroscope Options: LPF1
-    // uint8_t ctrl_4 = GYRO_LPF1_SEL;
-    // status = I2C_Mem_Write_Single(
-    //     I2C_ADDRESS,
-    //     CTRL_4_REG,
-    //     ctrl_4
-    // );
-    // RETURN_IF_STATUS_NOT_OK(status, ErrorCode::I2C_ERROR, "Failed to write to Ctrl 4");
-
     // CTRL6 Gyroscope Options: low-pass filter
     uint8_t ctrl_6 = GYRO_LOW_PASS_BANDWIDTH;
     status = I2C_Mem_Write_Single(
@@ -149,16 +140,10 @@ std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Accel_Read_Raw(
 }
 
 std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Accel_Read(int16_t* buffer) {
-    uint8_t raw_buffer[6];
-    int16_t pnRawData[3];
-    auto maybe_error = Accel_Read_Raw(raw_buffer);
+    auto maybe_error = Accel_Read_Raw((uint8_t*)buffer);
     RETURN_IF_CONTAINS_ERROR(maybe_error);
     for (int i = 0; i < 3; i++) {
-        pnRawData[i] = ((((uint16_t)raw_buffer[2*i+1]) << 8) + (uint16_t)raw_buffer[2*i]);
-    }
-
-    for (int i = 0; i < 3; i++) {
-        buffer[i] = (int16_t)(pnRawData[i] * ACCEL_SENSITIVITY);
+        buffer[i] = (int16_t)(buffer[i] * ACCEL_SENSITIVITY);
     }
     return {};
 }
@@ -175,18 +160,11 @@ std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Gyro_Read_Raw(u
     return {};
 }
 
-std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Gyro_Read(float* buffer) {
-    uint8_t raw_buffer[6];
-    int16_t pnRawData[3];
-    auto maybe_error = Gyro_Read_Raw(raw_buffer);
+std::optional<SimpleSlam::LSM6DSL::error_t> SimpleSlam::LSM6DSL::Gyro_Read(int16_t* buffer) {
+    auto maybe_error = Gyro_Read_Raw((uint8_t *)buffer);
     RETURN_IF_CONTAINS_ERROR(maybe_error);
-
     for (int i = 0; i < 3; i++) {
-        pnRawData[i] = ((((uint16_t)raw_buffer[2*i+1]) << 8) + (uint16_t)raw_buffer[2*i]);
-    }
-
-    for (int i = 0; i < 3; i++) {
-        buffer[i] = (float)(pnRawData[i] * GYRO_SENSITIVITY);
+        buffer[i] = (int16_t)(buffer[i] * GYRO_SENSITIVITY);
     }
 
     return {};

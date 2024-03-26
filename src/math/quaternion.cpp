@@ -11,34 +11,34 @@
 
 
 SimpleSlam::Math::Quaternion::Quaternion() {
-    _mData[0] = _mData[1] = _mData[2] = 0;
-    _mData[3] = 1;
+    _data[0] = _data[1] = _data[2] = 0;
+    _data[3] = 1;
 }
 
 SimpleSlam::Math::Quaternion::Quaternion(const SimpleSlam::Math::Vector3& v, double w) {
-    _mData[0] = v[0];
-    _mData[1] = v[1];
-    _mData[2] = v[2];
-    _mData[3] = w;
+    _data[0] = v[0];
+    _data[1] = v[1];
+    _data[2] = v[2];
+    _data[3] = w;
 }
 
 SimpleSlam::Math::Quaternion::Quaternion(double x, double y, double z, double w) {
-    _mData[0] = x;
-    _mData[1] = y;
-    _mData[2] = z;
-    _mData[3] = w;
+    _data[0] = x;
+    _data[1] = y;
+    _data[2] = z;
+    _data[3] = w;
 }
 
-double SimpleSlam::Math::Quaternion::x() const { return _mData[0]; }
-double SimpleSlam::Math::Quaternion::y() const { return _mData[1]; }
-double SimpleSlam::Math::Quaternion::z() const { return _mData[2]; }
+double SimpleSlam::Math::Quaternion::x() const { return _data[0]; }
+double SimpleSlam::Math::Quaternion::y() const { return _data[1]; }
+double SimpleSlam::Math::Quaternion::z() const { return _data[2]; }
 double SimpleSlam::Math::Quaternion::w() const { return real(); }
 
-SimpleSlam::Math::Vector3 SimpleSlam::Math::Quaternion::complex() const { return Vector3(_mData[0], _mData[1], _mData[2]); }
+SimpleSlam::Math::Vector3 SimpleSlam::Math::Quaternion::complex() const { return Vector3(_data[0], _data[1], _data[2]); }
 void SimpleSlam::Math::Quaternion::complex(const Vector3& c) {
-    _mData[0] = c[0];
-    _mData[1] = c[1];
-    _mData[2] = c[2];
+    _data[0] = c[0];
+    _data[1] = c[1];
+    _data[2] = c[2];
 }
 
 /**
@@ -46,8 +46,8 @@ void SimpleSlam::Math::Quaternion::complex(const Vector3& c) {
  *
  * @return The scalar part of the quaternion.
  */
-double SimpleSlam::Math::Quaternion::real() const { return _mData[3]; }
-void SimpleSlam::Math::Quaternion::real(double r) { _mData[3] = r; }
+double SimpleSlam::Math::Quaternion::real() const { return _data[3]; }
+void SimpleSlam::Math::Quaternion::real(double r) { _data[3] = r; }
 
 /**
  * @brief Computes the axis-angle representation of the quaternion.
@@ -156,8 +156,8 @@ SimpleSlam::Math::Quaternion SimpleSlam::Math::Quaternion::operator/(double s) c
  * @return The 2-norm of [ w(), x(), y(), z() ]<sup>T</sup>.
  */
 double SimpleSlam::Math::Quaternion::norm() const {
-    return sqrt(_mData[0] * _mData[0] + _mData[1] * _mData[1] +
-                _mData[2] * _mData[2] + _mData[3] * _mData[3]);
+    return sqrt(_data[0] * _data[0] + _data[1] * _data[1] +
+                _data[2] * _data[2] + _data[3] * _data[3]);
 }
 
 /** @brief Returns an equivalent euler angle representation of
@@ -169,19 +169,36 @@ SimpleSlam::Math::Vector3 SimpleSlam::Math::Quaternion::euler(void) const {
     double sqw, sqx, sqy, sqz;
 
     // quick conversion to Euler angles to give tilt to user
-    sqw = _mData[3] * _mData[3];
-    sqx = _mData[0] * _mData[0];
-    sqy = _mData[1] * _mData[1];
-    sqz = _mData[2] * _mData[2];
+    sqw = _data[3] * _data[3];
+    sqx = _data[0] * _data[0];
+    sqy = _data[1] * _data[1];
+    sqz = _data[2] * _data[2];
+    const static double EPSILON = 1e-10;
 
-    const double roll =
-        atan2(2.0 * (_mData[3] * _mData[0] + _mData[1] * _mData[2]),
+    double roll =
+        atan2(2.0 * (_data[3] * _data[0] + _data[1] * _data[2]),
                 1 - 2 * (sqx + sqy));
-    const double pitch =
-        asin(2.0 * (_mData[3] * _mData[1] - _mData[0] * _mData[2]));
-    const double yaw =
-        atan2(2.0 * (_mData[0] * _mData[1] + _mData[3] * _mData[2]),
+    double pitch =
+        asin(2.0 * (_data[3] * _data[1] - _data[0] * _data[2]));
+    double yaw =
+        atan2(2.0 * (_data[0] * _data[1] + _data[3] * _data[2]),
                 1 - 2 * (sqy + sqz));
+    
+    if (PI_OVER_2 - fabs(pitch) > EPSILON) {
+        yaw = atan2(2.0 * (_data[0]*_data[1] + _data[3]*_data[2]),
+                         sqx - sqy - sqz + sqw);
+        roll = atan2(2.0 * (_data[3]*_data[0] + _data[1]*_data[2]),
+                         sqw - sqx - sqy + sqz);
+      } else {
+        // compute heading from local 'down' vector
+        yaw = atan2(2*_data[1]*_data[2] - 2*_data[0]*_data[3],
+                         2*_data[0]*_data[2] + 2*_data[1]*_data[3]);
+        roll = 0.0;
+        
+        // If facing down, reverse yaw
+        if (pitch < 0)
+          yaw = SimpleSlam::Math::pi - yaw;
+    }
 
     Vector3 euler(roll, pitch, yaw);
     return euler;

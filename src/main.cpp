@@ -76,7 +76,7 @@ int main() {
     SimpleSlam::VL53L0X::Init(tof_config);
 
     int16_t accel_buffer[3];
-    float gyro_buffer[3];
+    int16_t gyro_buffer[3];
     int16_t magno_buffer[3];
     uint16_t tof_distance = 0;
 
@@ -109,8 +109,8 @@ int main() {
            calibration_data.scale_x, calibration_data.scale_y,
            calibration_data.scale_z);
 
-    Thread t;
-    t.start(test_http_client);    
+    // Thread t;
+    // t.start(test_http_client);    
 
     int16_t i = 0;
     SimpleSlam::Math::Vector3 gyro_offset(0, 0, 0);
@@ -160,7 +160,7 @@ int main() {
 
     while (true) {
         SimpleSlam::Math::Vector3 pos = ins.get_position();
-        printf("POS: %s\n", pos.to_string().c_str());
+        // printf("POS: %s\n", pos.to_string().c_str());
 
         SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
         SimpleSlam::LSM6DSL::Gyro_Read(gyro_buffer);
