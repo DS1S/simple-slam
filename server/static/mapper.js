@@ -51,6 +51,18 @@ const options = {
                 text: 'Y',
             },
         }
+    },
+    plugins: {
+        zoom: {
+            zoom: {
+                wheel: {
+                    enabled: true
+                }
+            },
+            pan: {
+                enabled: true,
+            }
+        }
     }
 };
 
