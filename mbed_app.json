@@ -3,8 +3,7 @@
       "*": {
         "platform.minimal-printf-enable-floating-point": true,
         "platform.stdio-baud-rate": 115200,
-        "target.cpp-std": "c++17",
-        "platform.callback-nontrivial": true
+        "target.cpp-std": "c++17"
     }
   }
 }
