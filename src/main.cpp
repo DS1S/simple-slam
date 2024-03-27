@@ -61,7 +61,8 @@ void update_intertial_navigation_system(
 
 void calculate_spatial_point(
     SimpleSlam::Math::InertialNavigationSystem* inertial_navigation_system,
-    SimpleSlam::BufferedHTTPClient* buffered_http_client) {
+    SimpleSlam::BufferedHTTPClient* buffered_http_client,
+    SimpleSlam::CarHardwareInterface* car_interface) {
     int16_t accel_buffer[3];
     int16_t magno_buffer[3];
 
@@ -89,6 +90,8 @@ void calculate_spatial_point(
     if (tof_distance == 0) {
         return;
     }
+
+    car_interface->check_collision(tof_distance);
 
     SimpleSlam::Math::Vector3 north_vector(adjusted_magno.normalize());
     SimpleSlam::Math::Vector3 up_vector(temp_accel.normalize());
@@ -159,50 +162,35 @@ int main() {
 
     // Setup buffered_http_client
     std::unique_ptr<WiFiInterface> wifi(std::make_unique<ISM43362Interface>());
-    SimpleSlam::HttpClient http_client(std::move(wifi), 80);
-    SimpleSlam::BufferedHTTPClient buffered_http_client(http_client, 10,
+    SimpleSlam::HttpClient http_client(std::move(wifi), 3000);
+    SimpleSlam::BufferedHTTPClient buffered_http_client(http_client, 20,
                                                         "192.168.2.33");
 
-    // Begin main processing tasks for ToF and Position Calculator (static scheduling)
-    // Compute time of calculate spatial point should be around 19ms.
-    sensor_event_queue.call_every(22ms,
+    // Setup Car Hardware Interface
+    SimpleSlam::CarHardwareInterface car_interface;
+    car_interface.init();
+
+    // Begin main processing tasks for ToF and Position Calculator (static
+    // scheduling) Compute time of calculate spatial point should be around
+    // 19ms.
+    sensor_event_queue.call_every(25ms,
                                   callback(update_intertial_navigation_system,
                                            &inertial_navigation_system));
-    sensor_event_queue.call_every(80ms, callback([&] {
-                                      calculate_spatial_point(
-                                          &inertial_navigation_system,
-                                          &buffered_http_client);
-                                  }));
+    sensor_event_queue.call_every(
+        500ms, callback([&] {
+            calculate_spatial_point(&inertial_navigation_system,
+                                    &buffered_http_client, &car_interface);
+        }));
 
     // Begin buffered http client thread
     Thread buffered_http_client_thread;
     buffered_http_client_thread.start(
         callback([&] { buffered_http_client.begin_processing(); }));
 
+    Thread car_thread;
+    car_thread.start(callback([&] { car_interface.begin_processing(); }));
+
     sensor_event_queue.dispatch_forever();
 
     return 0;
 }
-
-// CarHardwareInterface car;
-// car.init();
-
-//     if (tof_distance > 25) {
-//         car.move_forward();
-//     } else {
-//         // Stop for a second and smile :D
-//         car.stop();
-//         ThisThread::sleep_for(1s);
-
-//         // Pick a random direction
-//         if (rand() % 2 == 0) {
-//             car.turn_left();
-//             ThisThread::sleep_for(750ms);
-//         } else {
-//             car.turn_right();
-//             ThisThread::sleep_for(750ms);
-//         }
-//     }
-
-//     ThisThread::sleep_for(250ms);
-// }

@@ -6,15 +6,17 @@ SimpleSlam::BufferedHTTPClient::BufferedHTTPClient(
       _capacity(capacity),
       _mutex(),
       _cond_var(_mutex),
-      _host(std::move(host)) {
+      _host(std::move(host)) {}
+
+void SimpleSlam::BufferedHTTPClient::begin_processing() {
     std::optional<HttpClient::error_t> maybe_error = _http_client.init();
     if (maybe_error.has_value()) {
         printf("Could not initalize the http client: %s\n",
                maybe_error.value().second.c_str());
     }
-}
 
-void SimpleSlam::BufferedHTTPClient::begin_processing() {
+    _http_client.delete_request(_host, "/api/reset/b1");
+
     while (true) {
         _mutex.lock();
         while (_buffered_data.size() < _capacity) {

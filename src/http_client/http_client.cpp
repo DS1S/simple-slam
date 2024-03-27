@@ -16,9 +16,7 @@ SimpleSlam::HttpClient::HttpClient(unique_ptr<WiFiInterface> wifi,
                                    int port = 80)
     : _wifi(std::move(wifi)), _port(port) {}
 
-SimpleSlam::HttpClient::HttpClient(HttpClient&& other) {
-    _wifi = std::move(other._wifi);
-}
+SimpleSlam::HttpClient::HttpClient(HttpClient&& other) : _wifi(std::move(other._wifi)), _port(other._port) {}
 
 std::optional<HttpClient::error_t> HttpClient::init() {
     printf("[HttpClient]: Http Client Init\n");
