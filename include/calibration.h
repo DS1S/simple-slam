@@ -15,12 +15,12 @@ typedef struct calibration_data {
 } calibration_data_t;
 
 typedef struct calibration_args {
-  EventQueue* event_queue;
-  calibration_data_t* calibration_data;
-  CalibrationStep* current_calibration_step;
-  DigitalOut* indicator_led;
+    EventQueue* event_queue;
+    calibration_data_t* calibration_data;
+    CalibrationStep* current_calibration_step;
+    DigitalOut* indicator_led;
 } calibration_args_t;
 
 void Handle_Calibration_Step_Change(calibration_args_t* args);
 
-}  // namespace SimpleSlam::Math
+}  // namespace SimpleSlam

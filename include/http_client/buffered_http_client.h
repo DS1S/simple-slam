@@ -1,8 +1,8 @@
 #pragma once
 #include <vector>
 
-#include "math/vector.h"
 #include "http_client/http_client.h"
+#include "math/vector.h"
 #include "mbed.h"
 
 namespace SimpleSlam {
@@ -21,7 +21,8 @@ class BufferedHTTPClient {
     std::vector<point_data_t> _buffered_data;
 
    public:
-    BufferedHTTPClient(SimpleSlam::HttpClient& http_client, size_t capacity, std::string host);
+    BufferedHTTPClient(SimpleSlam::HttpClient& http_client, size_t capacity,
+                       std::string host);
     void begin_processing();
     void add_data(point_data_t const& data);
 };

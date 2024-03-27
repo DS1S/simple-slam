@@ -159,16 +159,16 @@ int main() {
 
     // Setup buffered_http_client
     std::unique_ptr<WiFiInterface> wifi(std::make_unique<ISM43362Interface>());
-    SimpleSlam::HttpClient http_client(std::move(wifi));
-    SimpleSlam::BufferedHTTPClient buffered_http_client(http_client, 50,
-                                                        "127.0.0.1");
+    SimpleSlam::HttpClient http_client(std::move(wifi), 3000);
+    SimpleSlam::BufferedHTTPClient buffered_http_client(http_client, 10,
+                                                        "192.168.2.33");
 
     // Begin main processing tasks for ToF and Position Calculator (static scheduling)
     // Compute time of calculate spatial point should be around 19ms.
     sensor_event_queue.call_every(22ms,
                                   callback(update_intertial_navigation_system,
                                            &inertial_navigation_system));
-    sensor_event_queue.call_every(40ms, callback([&] {
+    sensor_event_queue.call_every(80ms, callback([&] {
                                       calculate_spatial_point(
                                           &inertial_navigation_system,
                                           &buffered_http_client);

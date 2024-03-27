@@ -12,7 +12,6 @@ SimpleSlam::BufferedHTTPClient::BufferedHTTPClient(
         printf("Could not initalize the http client: %s\n",
                maybe_error.value().second.c_str());
     }
-    _buffered_data.reserve(capacity);
 }
 
 void SimpleSlam::BufferedHTTPClient::begin_processing() {
@@ -22,25 +21,27 @@ void SimpleSlam::BufferedHTTPClient::begin_processing() {
             _cond_var.wait();
         }
 
-        std::vector<std::vector<double>> spatials;
-        std::vector<std::vector<double>> positions;
+        std::vector<std::any> spatials;
+        std::vector<std::any> positions;
         for (auto& data_point : _buffered_data) {
-            spatials.push_back({data_point.spatial_point.get_x(),
-                                data_point.spatial_point.get_y()});
-            positions.push_back({data_point.position_point.get_x(),
-                                 data_point.position_point.get_y()});
+            spatials.push_back(
+                std::vector<std::any>{data_point.spatial_point.get_x(),
+                                      data_point.spatial_point.get_y()});
+            positions.push_back(
+                std::vector<std::any>{data_point.position_point.get_x(),
+                                      data_point.position_point.get_y()});
         }
         _buffered_data.clear();
         _mutex.unlock();
         JSON data;
 
         data.add("board_id", "b1")
-            .add_list("spatials", spatials)
-            .add_list("positions", positions);
+            .add("spatials", spatials)
+            .add("positions", positions);
 
-        printf("Hitting here\n");
+        printf("Data being sent: %s\n", data.build().c_str());
         std::optional<HttpClient::error_t> maybe_error =
-            _http_client.post_request(_host, "/collect", data);
+            _http_client.post_request(_host, "/api/collect", data);
         if (maybe_error.has_value()) {
             printf("Encountered Error in Buffered HTTP Client: %s\n",
                    maybe_error.value().second.c_str());

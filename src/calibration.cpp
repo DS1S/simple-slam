@@ -3,9 +3,8 @@
 #include "driver/lis3mdl.h"
 #include "driver/lsm6dsl.h"
 
-void calibrate_accel_gyro(
-    DigitalOut* calibration_indicator_led,
-    SimpleSlam::calibration_data_t* calibration_data) {
+void calibrate_accel_gyro(DigitalOut* calibration_indicator_led,
+                          SimpleSlam::calibration_data_t* calibration_data) {
     printf("Calibrating Accelerometer and Gyroscope\n");
     *calibration_indicator_led = 1;
 
@@ -40,11 +39,11 @@ void calibrate_accel_gyro(
     printf("Calibrated Accel Offset: %s\n",
            calibration_data->gyro_offset.to_string().c_str());
     *calibration_indicator_led = 0;
+    printf("Finished Gyro and Accel Calibration\n");
 }
 
-void calibrate_magnetometer(
-    DigitalOut* calibration_indicator_led,
-    SimpleSlam::calibration_data_t* calibration_data) {
+void calibrate_magnetometer(DigitalOut* calibration_indicator_led,
+                            SimpleSlam::calibration_data_t* calibration_data) {
     printf("Calibrating Magnetometer\n");
     *calibration_indicator_led = 1;
 
@@ -65,10 +64,10 @@ void calibrate_magnetometer(
         SimpleSlam::Math::Fill_Magnetometer_Calibration_Data(readings);
 
     *calibration_indicator_led = 0;
+    printf("Finished Magnometer Calibration\n");
 }
 
-void SimpleSlam::Handle_Calibration_Step_Change(
-    calibration_args_t* args) {
+void SimpleSlam::Handle_Calibration_Step_Change(calibration_args_t* args) {
     switch (*args->current_calibration_step) {
         case CalibrationStep::MAGNETOMETER:
             calibrate_magnetometer(args->indicator_led, args->calibration_data);
