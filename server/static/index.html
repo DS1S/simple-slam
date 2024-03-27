@@ -4,7 +4,6 @@
     <title>Simple SLAM - Viewer</title>
     <style>
         canvas {
-            border: 1px solid black;
             padding: 20px;
             display: block;
             display: block;
@@ -19,9 +18,12 @@
 </head>
 <body>
     <h1 style="text-align: center;">Simple SLAM - Viewer</h1>
-    <canvas id="map_canvas" width="600" height="400"></canvas>
+    <canvas id="map_canvas" style="width: 75vw; height: 75vh"></canvas>
     <p style="text-align: center;">Points updated: <span id="updated">updating..</span></p>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
     <script src="mapper.js"></script>
 </body>
 </html>
