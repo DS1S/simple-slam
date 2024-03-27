@@ -40,8 +40,10 @@ void SimpleSlam::BufferedHTTPClient::begin_processing() {
             .add("positions", positions);
 
         printf("Data being sent: %s\n", data.build().c_str());
+
         std::optional<HttpClient::error_t> maybe_error =
             _http_client.post_request(_host, "/api/collect", data);
+
         if (maybe_error.has_value()) {
             printf("Encountered Error in Buffered HTTP Client: %s\n",
                    maybe_error.value().second.c_str());

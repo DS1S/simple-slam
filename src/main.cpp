@@ -159,7 +159,7 @@ int main() {
 
     // Setup buffered_http_client
     std::unique_ptr<WiFiInterface> wifi(std::make_unique<ISM43362Interface>());
-    SimpleSlam::HttpClient http_client(std::move(wifi), 3000);
+    SimpleSlam::HttpClient http_client(std::move(wifi), 80);
     SimpleSlam::BufferedHTTPClient buffered_http_client(http_client, 10,
                                                         "192.168.2.33");
 
@@ -186,43 +186,6 @@ int main() {
 
 // CarHardwareInterface car;
 // car.init();
-
-// while (false) {
-//     SimpleSlam::LSM6DSL::Accel_Read(accel_buffer);
-//     SimpleSlam::LIS3MDL::ReadXYZ(magno_buffer[0], magno_buffer[1],
-//                                  magno_buffer[2]);
-//     SimpleSlam::Math::Vector3 temp_accel(accel_buffer[0], accel_buffer[1],
-//                                          accel_buffer[2]);
-
-//     SimpleSlam::Math::Vector3 temp_magno(magno_buffer[0], magno_buffer[1],
-//                                          magno_buffer[2]);
-
-//     SimpleSlam::Math::Vector3 adjusted_magno(
-//         SimpleSlam::Math::Adjust_Magnetometer_Vector(temp_magno,
-//                                                      calibration_data));
-
-//     SimpleSlam::VL53L0X::Perform_Single_Shot_Read(tof_distance);
-//     tof_distance /= 10;
-
-//     SimpleSlam::Math::Vector3 north_vector(adjusted_magno.normalize());
-//     SimpleSlam::Math::Vector3 up_vector(temp_accel.normalize());
-//     SimpleSlam::Math::Vector3 tof_vector(0, 0, 1);
-//     SimpleSlam::Math::Vector2 tof_direction_vector =
-//         SimpleSlam::Math::Convert_Tof_Direction_Vector(
-//             north_vector, up_vector, tof_vector);
-//     SimpleSlam::Math::Vector2 mapped_point =
-//         SimpleSlam::Math::Convert_To_Spatial_Point(
-//             tof_direction_vector.normalize(), tof_distance);
-
-//     printf("TOF SENSOR DISTANCE: %dcm\n", tof_distance);
-//     printf("ACCELEROMETER (x, y, z) = (%d mg, %d mg, %d mg)\n",
-//            accel_buffer[0], accel_buffer[1], accel_buffer[2]);
-//     printf("MAGNETOMETER (x, y, z) = (%d mg, %d mg, %d mg)\n",
-//            magno_buffer[0], magno_buffer[1], magno_buffer[2]);
-//     // printf("Direction Vector: %s, %f\n",
-//     //        tof_direction_vector.normalize().to_string().c_str(),
-//     //        tof_direction_vector.normalize().to_string().c_str());
-//     printf("Spatial Vector: %s\n", mapped_point.to_string().c_str());
 
 //     if (tof_distance > 25) {
 //         car.move_forward();
