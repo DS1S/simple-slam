@@ -75,6 +75,9 @@ std::string SimpleSlam::Math::Vector3::to_string() const {
  */
 SimpleSlam::Math::Vector2::Vector2(double x, double y) : _x{x}, _y{y} {}
 
+SimpleSlam::Math::Vector2::Vector2(const Vector3& other)
+    : _x{other.get_x()}, _y{other.get_y()} {}
+
 SimpleSlam::Math::Vector2 SimpleSlam::Math::Vector2::operator+(
     const Vector2& other) const {
     return Vector2(_x + other._x, _y + other._y);

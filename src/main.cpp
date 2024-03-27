@@ -8,6 +8,7 @@
 #include "driver/lis3mdl.h"
 #include "driver/lsm6dsl.h"
 #include "driver/vl53l0x.h"
+#include "http_client/buffered_http_client.h"
 #include "http_client/http_client.h"
 #include "math.h"
 #include "math/conversion.h"
@@ -59,7 +60,8 @@ void update_intertial_navigation_system(
 }
 
 void calculate_spatial_point(
-    SimpleSlam::Math::InertialNavigationSystem* inertial_navigation_system) {
+    SimpleSlam::Math::InertialNavigationSystem* inertial_navigation_system,
+    SimpleSlam::BufferedHTTPClient* buffered_http_client) {
     int16_t accel_buffer[3];
     int16_t magno_buffer[3];
 
@@ -83,15 +85,30 @@ void calculate_spatial_point(
     // Convert ToF distance to cm.
     tof_distance /= 10;
 
+    // Nothing is infront of it, too far to map point
+    if (tof_distance == 0) {
+        return;
+    }
+
     SimpleSlam::Math::Vector3 north_vector(adjusted_magno.normalize());
     SimpleSlam::Math::Vector3 up_vector(temp_accel.normalize());
     SimpleSlam::Math::Vector3 tof_vector(0, 0, 1);
+
     SimpleSlam::Math::Vector2 tof_direction_vector =
-        SimpleSlam::Math::Convert_Tof_Direction_Vector(
-            north_vector, up_vector, tof_vector);
-    SimpleSlam::Math::Vector2 mapped_point =
+        SimpleSlam::Math::Convert_Tof_Direction_Vector(north_vector, up_vector,
+                                                       tof_vector);
+
+    SimpleSlam::Math::Vector2 tof_mapped_point =
         SimpleSlam::Math::Convert_To_Spatial_Point(
             tof_direction_vector.normalize(), tof_distance);
+
+    // Convert to cm.
+    SimpleSlam::Math::Vector2 position_point =
+        inertial_navigation_system->get_position() * 100;
+
+    SimpleSlam::Math::Vector2 spatial_point = tof_mapped_point + position_point;
+
+    buffered_http_client->add_data({spatial_point, position_point});
 }
 
 int main() {
@@ -140,11 +157,27 @@ int main() {
         calibration_data.accel_offset, calibration_data.gyro_offset,
         SimpleSlam::Math::Vector3(0, 0, 0), SimpleSlam::Math::Vector3(0, 0, 0));
 
+    // Setup buffered_http_client
+    std::unique_ptr<WiFiInterface> wifi(std::make_unique<ISM43362Interface>());
+    SimpleSlam::HttpClient http_client(std::move(wifi));
+    SimpleSlam::BufferedHTTPClient buffered_http_client(http_client, 50,
+                                                        "127.0.0.1");
+
+    // Begin main processing tasks for ToF and Position Calculator (static scheduling)
+    // Compute time of calculate spatial point should be around 19ms.
     sensor_event_queue.call_every(22ms,
                                   callback(update_intertial_navigation_system,
                                            &inertial_navigation_system));
-    sensor_event_queue.call_every(
-        40ms, callback(calculate_spatial_point, &inertial_navigation_system));
+    sensor_event_queue.call_every(40ms, callback([&] {
+                                      calculate_spatial_point(
+                                          &inertial_navigation_system,
+                                          &buffered_http_client);
+                                  }));
+
+    // Begin buffered http client thread
+    Thread buffered_http_client_thread;
+    buffered_http_client_thread.start(
+        callback([&] { buffered_http_client.begin_processing(); }));
 
     sensor_event_queue.dispatch_forever();
 

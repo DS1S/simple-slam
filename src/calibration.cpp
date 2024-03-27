@@ -1,11 +1,11 @@
-#include "math/calibration.h"
+#include "calibration.h"
 
 #include "driver/lis3mdl.h"
 #include "driver/lsm6dsl.h"
 
 void calibrate_accel_gyro(
     DigitalOut* calibration_indicator_led,
-    SimpleSlam::Math::calibration_data_t* calibration_data) {
+    SimpleSlam::calibration_data_t* calibration_data) {
     printf("Calibrating Accelerometer and Gyroscope\n");
     *calibration_indicator_led = 1;
 
@@ -44,7 +44,7 @@ void calibrate_accel_gyro(
 
 void calibrate_magnetometer(
     DigitalOut* calibration_indicator_led,
-    SimpleSlam::Math::calibration_data_t* calibration_data) {
+    SimpleSlam::calibration_data_t* calibration_data) {
     printf("Calibrating Magnetometer\n");
     *calibration_indicator_led = 1;
 

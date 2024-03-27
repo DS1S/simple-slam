@@ -1,3 +1,5 @@
+#pragma once
+
 #include "mbed.h"
 #include "WiFiInterface.h"
 #include "data/json.h"
@@ -24,6 +26,7 @@ class HttpClient {
         typedef std::pair<ErrorCode, std::string> error_t;
 
         HttpClient(std::unique_ptr<WiFiInterface> wifi);
+        HttpClient(HttpClient&& other);
 
         std::optional<error_t> init();
 

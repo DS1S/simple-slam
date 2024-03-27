@@ -12,6 +12,10 @@ using namespace SimpleSlam;
 
 SimpleSlam::HttpClient::HttpClient(unique_ptr<WiFiInterface> wifi) : _wifi(std::move(wifi)) {}
 
+SimpleSlam::HttpClient::HttpClient(HttpClient&& other) {
+    _wifi = std::move(other._wifi);
+}
+
 std::string HttpClient::error_message(ErrorCode error) {
     switch (error) {
         case ErrorCode::WIFI_CONNECT_ERROR:
@@ -63,6 +67,7 @@ std::optional<HttpClient::error_t> HttpClient::post_request(std::string host, st
     _socket.recv(buffer, 16);
     if (strncmp(buffer, "HTTP/1.1 200 OK", 15) != 0) {
         printf("POST Response: %s\n", buffer);
+        _socket.close();
         return std::make_optional(std::make_pair(
             ErrorCode::POST_NOT_OK,
             error_message(ErrorCode::POST_NOT_OK)));
@@ -93,6 +98,7 @@ std::optional<HttpClient::error_t> HttpClient::get_request(std::string host, std
     _socket.recv(buffer, 16);
     if (strncmp(buffer, "HTTP/1.1 200 OK", 15) != 0) {
         printf("GET Response: %s\n", buffer);
+        _socket.close();
         return std::make_optional(std::make_pair(
             ErrorCode::GET_NOT_OK,
             error_message(ErrorCode::GET_NOT_OK)));
@@ -123,6 +129,7 @@ std::optional<HttpClient::error_t> HttpClient::delete_request(std::string host, 
     _socket.recv(buffer, 16);
     if (strncmp(buffer, "HTTP/1.1 200 OK", 15) != 0) {
         printf("DELETE Response: %s\n", buffer);
+        _socket.close();
         return std::make_optional(std::make_pair(
             ErrorCode::DELETE_NOT_OK,
             error_message(ErrorCode::DELETE_NOT_OK)));
