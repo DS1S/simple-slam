@@ -30,6 +30,7 @@ class Vector3 {
 class Vector2 {
    public:
     Vector2(double x, double y);
+    Vector2(const Vector3& other);
     Vector2 operator+(const Vector2& other) const;
     Vector2 operator*(double scalar) const;
     Vector2 operator/(double scalar) const;
