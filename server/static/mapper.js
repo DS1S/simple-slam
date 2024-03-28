@@ -86,6 +86,7 @@ function fetchAndDraw() {
             });
             chart.update();
         });
+    since_update = 0;
 }
 
 fetchAndDraw();
