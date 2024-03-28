@@ -17,6 +17,8 @@ class CarHardwareInterface {
     PwmOut _wheel2_backward;
     Mutex _mutex;
     bool _should_adjust;
+    DigitalOut _led_red;
+    DigitalOut _led_blue;
 
    public:
     CarHardwareInterface();
