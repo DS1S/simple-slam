@@ -73,7 +73,7 @@ const chart = new Chart(canvas, {
 });
 
 function fetchAndDraw() {
-    fetch('http://localhost:3000/api/points/1?mock=true')
+    fetch('http://localhost:3000/api/points/b1')
         .then(response => response.json())
         .then(data => {        
             spatial_points.length = 0;
