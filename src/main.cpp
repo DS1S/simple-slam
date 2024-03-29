@@ -15,6 +15,7 @@
 #include "math/inertial_navigation.h"
 #include "math/quaternion.h"
 #include "mbed.h"
+#include "http_client/wifi_config.h"
 
 SimpleSlam::CalibrationStep current_calibration_step(
     SimpleSlam::CalibrationStep::MAGNETOMETER);
@@ -164,7 +165,7 @@ int main() {
     std::unique_ptr<WiFiInterface> wifi(std::make_unique<ISM43362Interface>());
     SimpleSlam::HttpClient http_client(std::move(wifi), 3000);
     SimpleSlam::BufferedHTTPClient buffered_http_client(http_client, 20,
-                                                        "192.168.2.33");
+                                                        WEB_SERVER);
 
     // Setup Car Hardware Interface
     SimpleSlam::CarHardwareInterface car_interface;
